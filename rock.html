@@ -1,0 +1,1106 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>岩層時光旅行</title>
+
+<style>
+:root {
+  --paper: #fffaf0;
+  --ink: #604b3b;
+  --muted: #8c7965;
+  --line: #bca17e;
+  --accent: #b87550;
+}
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+  background-color: #f1e7d7;
+  background-image: radial-gradient(#bc9f7535 .8px, transparent .8px);
+  background-size: 9px 9px;
+}
+
+button { font: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+button:focus-visible, .slot:focus-visible {
+  outline: 3px solid #6995aa;
+  outline-offset: 4px;
+}
+
+main { width: min(1220px, 94%); margin: 28px auto; }
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  letter-spacing: 3px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+h1 { font-size: clamp(27px, 4vw, 38px); margin: 9px 0; }
+.subtitle { color: var(--muted); line-height: 1.7; margin: 0; }
+
+.btn {
+  padding: 11px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 13px 9px 14px 10px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 0 #bca17e25;
+}
+.btn:hover { background: #f7ecd8; }
+
+.tabs { display: flex; gap: 12px; margin: 23px 0 14px; }
+.tab { flex: 1; line-height: 1.7; }
+.tab small { display: block; font-size: 12px; }
+.tab.active {
+  background: var(--accent);
+  color: white;
+  border-color: #9b6242;
+}
+
+.loadbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  margin-bottom: 15px;
+  color: var(--muted);
+  font-size: 14px;
+}
+[hidden] { display: none !important; }
+
+.panel {
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 27px 21px 30px 19px;
+  box-shadow: 4px 6px 0 #b29a7420;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: .85fr 1.65fr;
+  gap: 22px;
+}
+
+.instructions { padding: 28px; }
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 9px;
+  background: #e6eddc;
+  color: #657a5d;
+  font-size: 13px;
+}
+
+h2 { font-size: 22px; margin: 18px 0 12px; }
+.instructions p { line-height: 1.95; }
+.instructions strong { color: #a7623e; }
+
+.steps { padding: 0; list-style: none; margin: 23px 0; }
+.steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 13px 0;
+  line-height: 1.7;
+}
+.steps b {
+  flex-shrink: 0;
+  width: 26px;
+  text-align: center;
+  background: #efdbb4;
+  border-radius: 48% 43% 46% 42%;
+}
+
+.tip {
+  border-top: 1px dashed #cfb99a;
+  padding-top: 15px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bank-panel { padding: 24px; }
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.heading h2 { margin: 0; }
+.heading small { color: var(--muted); }
+
+.bank {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 13px;
+  padding: 9px;
+  margin-top: 18px;
+  border: 2px dashed transparent;
+  border-radius: 16px;
+}
+
+.home {
+  grid-column: span 2;
+  min-width: 0;
+  aspect-ratio: 162 / 246;
+  position: relative;
+  border: 1px dashed #d0bc9c;
+  border-radius: 11px;
+  background: #f0e7d665;
+}
+.bank.seven .home:first-child { grid-column: 2 / span 2; }
+.bank.seven .home:nth-child(4) { grid-column: 1 / span 2; }
+
+.home::before {
+  content: attr(data-home);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #b39b7c;
+  font-size: 23px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  min-width: 0;
+  border: 1.5px solid #b69e7b;
+  border-radius: 9px 7px 12px 8px;
+  background: #fffef9;
+  box-shadow: 2px 4px 0 #ad936a25;
+  color: var(--ink);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.card.selected {
+  outline: 3px solid #c28d4f;
+  outline-offset: 3px;
+  background: #fff2cd;
+}
+
+.image-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: white;
+  pointer-events: none;
+}
+
+/* 以背景圖顯示原圖的指定區域，不使用 Canvas。 */
+.art {
+  display: block;
+  width: 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.card-label {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  pointer-events: none;
+}
+.placeholder { padding: 8px; color: var(--muted); font-size: 12px; }
+
+.answer-panel { padding: 26px; margin-top: 23px; }
+.progress {
+  font-size: 13px;
+  background: #f0e5cf;
+  padding: 6px 13px;
+  border-radius: 20px;
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 15px;
+  margin-top: 24px;
+}
+
+.answer-item { min-width: 0; }
+.slot-label {
+  text-align: center;
+  margin-bottom: 9px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.slot {
+  aspect-ratio: 162 / 246;
+  padding: 6px;
+  border: 2px dashed #c69e59;
+  border-radius: 12px 9px 15px 10px;
+  background: #fae8b8;
+  cursor: pointer;
+}
+
+.empty {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #ac8349;
+}
+.empty b { font-size: 38px; font-weight: normal; opacity: .7; }
+.empty span { font-size: 12px; }
+
+.slot.correct { background: #e4ecdb; border-color: #739379; }
+.slot.wrong { background: #f4ddce; border-color: #c47d61; }
+.drop-hover { outline: 3px solid #82a486; outline-offset: 3px; }
+
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 24px 0;
+  color: #8e775a;
+  font-size: 14px;
+}
+.timeline strong { font-size: 21px; }
+.timeline i {
+  height: 4px;
+  flex: 1;
+  background: #c4b08a;
+  border-radius: 50%;
+  position: relative;
+}
+.timeline i::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -5px;
+  border-left: 11px solid #c4b08a;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.primary {
+  padding: 14px 29px;
+  border: 2px solid #98613f;
+  border-radius: 14px 10px 17px 11px;
+  background: var(--accent);
+  color: white;
+  font-size: 19px;
+  font-weight: bold;
+  box-shadow: 0 4px 0 #935b3c;
+}
+.primary:hover { background: #a76a46; }
+
+.feedback { min-height: 76px; text-align: center; margin-top: 21px; }
+.feedback strong { display: block; font-size: 23px; line-height: 1.7; }
+.feedback small { display: block; color: var(--muted); line-height: 1.8; }
+.feedback.success strong { color: #547d60; }
+.feedback.error strong { color: #af674c; }
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 22px 0;
+}
+
+.ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: .94;
+  transform: rotate(3deg);
+  filter: drop-shadow(0 10px 10px #49332240);
+}
+.dragging { opacity: .25; }
+
+@media(max-width: 800px) {
+  .top { grid-template-columns: 1fr; }
+  .bank { max-width: 620px; margin-inline: auto; }
+  .answers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media(max-width: 480px) {
+  main { margin-top: 18px; }
+  header { align-items: flex-start; }
+  #soundButton { padding: 9px; white-space: nowrap; font-size: 13px; }
+  .tabs { gap: 8px; }
+  .tab { padding: 9px 5px; }
+  .bank-panel, .answer-panel { padding: 18px 12px; }
+  .bank { gap: 10px 7px; padding: 4px; }
+  .card { padding: 4px; }
+  .card-label { font-size: 11px; }
+  .answers { gap: 14px 9px; }
+  .slot { padding: 4px; }
+}
+</style>
+</head>
+
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">地球的小小記事本</div>
+      <h1>岩層時光旅行</h1>
+      <p class="subtitle">觀察岩層的變化，排出由老到新的故事。</p>
+    </div>
+    <button id="soundButton" class="btn" aria-pressed="true">
+      音效：開
+    </button>
+  </header>
+
+  <nav class="tabs" aria-label="選擇題目">
+    <button class="btn tab" data-question="0">
+      第 1 題<small>7 張選 6 張</small>
+    </button>
+    <button class="btn tab" data-question="1">
+      第 2 題<small>8 張選 6 張</small>
+    </button>
+    <button class="btn tab" data-question="2">
+      第 3 題<small>8 張選 6 張</small>
+    </button>
+  </nav>
+
+  <div class="loadbar">
+    <span id="loadStatus" role="status" aria-live="polite"></span>
+    <button id="retry" class="btn" hidden="">重新載入圖片</button>
+  </div>
+
+  <div id="board">
+    <div class="top">
+      <section class="panel instructions">
+        <span class="badge" id="questionBadge"></span>
+        <h2>哪個變化先發生？</h2>
+        <p>
+          請從 <strong id="optionCount"></strong> 張岩層程序圖中，
+          挑出 <strong>6 張正確的圖片</strong>，
+          按照 <strong>由老到新</strong> 的順序，
+          放進下方的 1～6 號格子。
+        </p>
+
+        <ol class="steps">
+          <li><b>1</b>觀察岩層與地質構造的變化。</li>
+          <li><b>2</b>拖曳圖片，排列事件先後順序。</li>
+          <li><b>3</b>按下「檢視正確答案」。</li>
+        </ol>
+
+        <p class="tip">
+          <span id="distractorHint"></span><br>
+          也可以先點圖片，再點答案格。<br>
+          圖片可交換位置，或拖回圖片區重新排列。
+        </p>
+      </section>
+
+      <section class="panel bank-panel">
+        <div class="heading">
+          <h2>岩層圖片區</h2>
+          <small id="bankHint"></small>
+        </div>
+        <div id="bank" class="bank" data-zone="bank" aria-label="圖片選項及圖片返回區"></div>
+      </section>
+    </div>
+
+    <section class="panel answer-panel">
+      <div class="heading">
+        <h2>排出岩層的時間順序</h2>
+        <span class="progress" id="progress"></span>
+      </div>
+
+      <div class="answers" id="answers"></div>
+
+      <div class="timeline" aria-label="時間由老到新">
+        <strong>老</strong><span>過去</span>
+        <i></i>
+        <span>現在</span><strong>新</strong>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="check">檢視正確答案</button>
+        <button class="btn" id="reset">重新排列本題</button>
+        <button class="btn" id="return" disabled="">移回圖片區</button>
+      </div>
+
+      <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <footer>
+    直接載入雲端原圖・不需上傳圖片・首次載入時請保持網路連線
+  </footer>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  /*
+   * 雲端圖片網址已直接設定。
+   *
+   * width、height、crops 使用原始畫面的參考座標。
+   * 顯示時換算成百分比，因此雲端圖片等比例縮小也可使用。
+   *
+   * 第1題沿用上一版圖片編號。
+   * 第2、3題：
+   * 上排由左至右 A、B、C、D
+   * 下排由左至右 E、F、G、H
+   */
+  const QUESTIONS = [
+    {
+      url: "https://bluecyj.github.io/rock/ex1.jpg",
+      width: 1366,
+      height: 988,
+      order: ["G", "F", "E", "D", "C", "B", "A"],
+      answer: ["D", "G", "B", "C", "E", "F"],
+      crops: {
+        G: [685, 33, 164, 217],
+        F: [871, 33, 164, 217],
+        E: [1055, 33, 165, 217],
+        D: [592, 257, 165, 218],
+        C: [777, 257, 165, 218],
+        B: [963, 257, 165, 218],
+        A: [1147, 257, 166, 218]
+      }
+    },
+    {
+      url: "https://bluecyj.github.io/rock/ex2.jpg",
+      width: 1369,
+      height: 984,
+      order: ["A", "B", "C", "D", "E", "F", "G", "H"],
+      answer: ["H", "C", "G", "F", "B", "D"],
+      crops: {
+        A: [618, 33, 164, 218],
+        B: [796, 33, 164, 218],
+        C: [974, 33, 164, 218],
+        D: [1150, 33, 165, 218],
+        E: [618, 268, 164, 216],
+        F: [796, 268, 164, 216],
+        G: [974, 268, 164, 216],
+        H: [1150, 268, 165, 216]
+      }
+    },
+    {
+      url: "https://bluecyj.github.io/rock/ex3.jpg",
+      width: 1387,
+      height: 990,
+      order: ["A", "B", "C", "D", "E", "F", "G", "H"],
+      answer: ["A", "F", "G", "C", "B", "H"],
+      crops: {
+        A: [629, 35, 166, 219],
+        B: [807, 35, 166, 219],
+        C: [985, 35, 166, 219],
+        D: [1163, 35, 166, 219],
+        E: [629, 269, 166, 218],
+        F: [807, 269, 166, 218],
+        G: [985, 269, 166, 218],
+        H: [1163, 269, 166, 218]
+      }
+    }
+  ];
+
+  const states = QUESTIONS.map(q => ({
+    slots: Array(6).fill(null),
+    selected: null,
+    checked: false,
+    load: "idle",
+    image: null,
+    src: q.url,
+    version: 0,
+    message: ["", "選出六張圖片，開始排列吧！", ""]
+  }));
+
+  const $ = id => document.getElementById(id);
+  const state = () => states[current];
+  const question = () => QUESTIONS[current];
+
+  let current = 0;
+  let soundEnabled = true;
+  let audioContext = null;
+  let drag = null;
+  let suppressClickUntil = 0;
+  let scrollFrame = 0;
+
+  function renderMessage() {
+    const [title, detail, type] = state().message;
+    const box = $("feedback");
+
+    box.className = "feedback " + type;
+    box.replaceChildren();
+
+    if (title) {
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      box.append(strong);
+    }
+
+    if (detail) {
+      const small = document.createElement("small");
+      small.textContent = detail;
+      box.append(small);
+    }
+  }
+
+  function message(title, detail, type = "") {
+    state().message = [title, detail, type];
+    renderMessage();
+  }
+
+  function renderLoadStatus() {
+    const s = state();
+    const number = current + 1;
+
+    const text = {
+      idle: `第 ${number} 題準備載入……`,
+      loading: `正在載入第 ${number} 題圖片，請稍候……`,
+      ready: `第 ${number} 題圖片已就緒，可以開始排列！`,
+      error: `第 ${number} 題圖片載入失敗，請確認網路後重新載入。`
+    };
+
+    $("loadStatus").textContent = text[s.load];
+    $("retry").hidden = s.load !== "error";
+    $("check").disabled = s.load !== "ready";
+  }
+
+  function createCard(id) {
+    const q = question();
+    const s = state();
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "card" + (s.selected === id ? " selected" : "");
+    button.dataset.card = id;
+    button.disabled = s.load !== "ready";
+    button.setAttribute("aria-label", `圖片 ${id}，可拖曳或點選`);
+    button.setAttribute("aria-pressed", String(s.selected === id));
+
+    const box = document.createElement("span");
+    box.className = "image-box";
+
+    if (s.load === "ready") {
+      const [x, y, w, h] = q.crops[id];
+      const art = document.createElement("span");
+
+      art.className = "art";
+      art.setAttribute("aria-hidden", "true");
+      art.style.aspectRatio = `${w} / ${h}`;
+      art.style.backgroundImage = `url("${s.src}")`;
+
+      // 將整張圖片放大至選項框大小，再定位到對應選項。
+      art.style.backgroundSize =
+        `${q.width / w * 100}% ${q.height / h * 100}%`;
+
+      art.style.backgroundPosition =
+        `${x / (q.width - w) * 100}% ${y / (q.height - h) * 100}%`;
+
+      box.append(art);
+    } else {
+      const hint = document.createElement("span");
+      hint.className = "placeholder";
+      hint.textContent = s.load === "error" ? "圖片載入失敗" : "圖片載入中…";
+      box.append(hint);
+    }
+
+    const label = document.createElement("span");
+    label.className = "card-label";
+    label.textContent = `圖片 ${id}`;
+
+    button.append(box, label);
+    return button;
+  }
+
+  function render() {
+    const q = question();
+    const s = state();
+    const count = q.order.length;
+
+    document.querySelectorAll("[data-question]").forEach(button => {
+      const active = Number(button.dataset.question) === current;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+
+    $("questionBadge").textContent = `第 ${current + 1} 題 · 觀察與排序`;
+    $("optionCount").textContent = count;
+    $("distractorHint").textContent = `小提醒：有 ${count - 6} 張圖片用不到哦！`;
+    $("bankHint").textContent = `${count} 張選 6 張 · ${count - 6} 張誘答選項`;
+    $("progress").textContent = `已放入 ${s.slots.filter(Boolean).length} / 6 張`;
+    $("return").disabled = !s.selected;
+
+    renderLoadStatus();
+
+    const bank = $("bank");
+    bank.className = "bank" + (count === 7 ? " seven" : "");
+    bank.replaceChildren();
+
+    q.order.forEach(id => {
+      const home = document.createElement("div");
+      home.className = "home";
+      home.dataset.home = id;
+
+      if (!s.slots.includes(id)) {
+        home.append(createCard(id));
+      }
+
+      bank.append(home);
+    });
+
+    $("answers").replaceChildren();
+
+    s.slots.forEach((id, index) => {
+      const item = document.createElement("div");
+      item.className = "answer-item";
+
+      const label = document.createElement("div");
+      label.className = "slot-label";
+      label.textContent = `第 ${index + 1} 步`;
+
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      slot.dataset.zone = String(index);
+      slot.tabIndex = 0;
+      slot.setAttribute("role", "group");
+      slot.setAttribute(
+        "aria-label",
+        `答案格 ${index + 1}，${id ? "圖片 " + id : "空白"}`
+      );
+
+      if (s.checked) {
+        slot.classList.add(id === q.answer[index] ? "correct" : "wrong");
+      }
+
+      if (id) {
+        slot.append(createCard(id));
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.innerHTML = `<b>${index + 1}</b><span>放入圖片</span>`;
+        slot.append(empty);
+      }
+
+      item.append(label, slot);
+      $("answers").append(item);
+    });
+
+    renderMessage();
+  }
+
+  /*
+   * 自動載入雲端圖片。
+   * 不需上傳、不讀取 Canvas 像素。
+   * 預先載入三題，切換時直接使用已載入的圖片。
+   */
+  function loadQuestion(index, retry = false) {
+    const s = states[index];
+
+    if (s.load === "loading" || (s.load === "ready" && !retry)) return;
+
+    const version = ++s.version;
+    const image = new Image();
+    const src = QUESTIONS[index].url +
+      (retry ? `?reload=${Date.now()}` : "");
+
+    s.load = "loading";
+    s.src = src;
+    s.image = image;
+
+    if (current === index) render();
+
+    const timer = setTimeout(() => {
+      if (s.version !== version || s.load !== "loading") return;
+
+      s.load = "error";
+      if (current === index) render();
+    }, 25000);
+
+    image.onload = () => {
+      clearTimeout(timer);
+      if (s.version !== version) return;
+
+      s.load = "ready";
+      if (current === index) render();
+    };
+
+    image.onerror = () => {
+      clearTimeout(timer);
+      if (s.version !== version) return;
+
+      s.load = "error";
+      if (current === index) render();
+    };
+
+    image.src = src;
+  }
+
+  function move(id, target) {
+    const s = state();
+    if (s.load !== "ready") return;
+
+    const source = s.slots.indexOf(id);
+
+    if (target === "bank") {
+      if (source !== -1) s.slots[source] = null;
+    } else {
+      const destination = Number(target);
+
+      if (!Number.isInteger(destination) ||
+          destination < 0 || destination > 5) return;
+
+      const displaced = s.slots[destination];
+      s.slots[destination] = id;
+
+      // 答案格間交換；圖片區移入則將原圖片退回圖片區。
+      if (source !== -1 && source !== destination) {
+        s.slots[source] = displaced;
+      }
+    }
+
+    s.selected = null;
+    s.checked = false;
+    s.message = ["", "排好後，按「檢視正確答案」確認。", ""];
+    render();
+  }
+
+  function select(id) {
+    const s = state();
+    if (s.load !== "ready") return;
+
+    s.selected = s.selected === id ? null : id;
+    s.message = [
+      "",
+      s.selected
+        ? `已選取圖片 ${id}，請點選答案格，或按「移回圖片區」。`
+        : "已取消選取。",
+      ""
+    ];
+
+    render();
+    document.querySelector(`[data-card="${id}"]`)
+      ?.focus({ preventScroll: true });
+  }
+
+  $("board").addEventListener("click", event => {
+    if (Date.now() < suppressClickUntil) return;
+
+    const card = event.target.closest("[data-card]");
+    const zone = event.target.closest("[data-zone]");
+    const selected = state().selected;
+
+    if (card) {
+      if (selected && selected !== card.dataset.card &&
+          zone && zone.dataset.zone !== "bank") {
+        move(selected, zone.dataset.zone);
+      } else {
+        select(card.dataset.card);
+      }
+    } else if (selected && zone) {
+      move(selected, zone.dataset.zone);
+    }
+  });
+
+  $("answers").addEventListener("keydown", event => {
+    if (!event.target.matches(".slot")) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+
+      if (state().selected) {
+        move(state().selected, event.target.dataset.zone);
+      }
+    }
+  });
+
+  // 滑鼠、觸控筆與手機觸控拖曳。
+  function targetAt(x, y) {
+    return document.elementFromPoint(x, y)?.closest("[data-zone]");
+  }
+
+  function clearHover() {
+    document.querySelectorAll(".drop-hover").forEach(element => {
+      element.classList.remove("drop-hover");
+    });
+  }
+
+  function updateHover() {
+    clearHover();
+
+    if (drag?.active) {
+      targetAt(drag.x, drag.y)?.classList.add("drop-hover");
+    }
+  }
+
+  function autoScroll() {
+    if (!drag?.active) return;
+
+    const edge = 65;
+    let amount = 0;
+
+    if (drag.y < edge) amount = -10;
+    else if (drag.y > innerHeight - edge) amount = 10;
+
+    if (amount) {
+      window.scrollBy(0, amount);
+      updateHover();
+    }
+
+    scrollFrame = requestAnimationFrame(autoScroll);
+  }
+
+  $("board").addEventListener("pointerdown", event => {
+    const card = event.target.closest("[data-card]");
+
+    if (!card || card.disabled || drag || event.button !== 0) return;
+
+    const rect = card.getBoundingClientRect();
+
+    drag = {
+      id: card.dataset.card,
+      pointerId: event.pointerId,
+      card,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: event.clientX,
+      y: event.clientY,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+      active: false,
+      ghost: null
+    };
+
+    card.setPointerCapture(event.pointerId);
+  });
+
+  window.addEventListener("pointermove", event => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+
+    if (!drag.active &&
+        Math.hypot(drag.x - drag.startX, drag.y - drag.startY) > 7) {
+      drag.active = true;
+      drag.ghost = drag.card.cloneNode(true);
+      drag.ghost.classList.add("ghost");
+      drag.ghost.classList.remove("selected");
+      drag.ghost.setAttribute("aria-hidden", "true");
+      drag.ghost.tabIndex = -1;
+      drag.ghost.style.width = drag.width + "px";
+      drag.ghost.style.height = drag.height + "px";
+
+      document.body.append(drag.ghost);
+      drag.card.classList.add("dragging");
+      scrollFrame = requestAnimationFrame(autoScroll);
+    }
+
+    if (!drag.active) return;
+    if (event.cancelable) event.preventDefault();
+
+    drag.ghost.style.left = drag.x - drag.offsetX + "px";
+    drag.ghost.style.top = drag.y - drag.offsetY + "px";
+
+    updateHover();
+  }, { passive: false });
+
+  function finishDrag(cancelled = false, event = null) {
+    if (!drag) return;
+
+    const d = drag;
+
+    if (event) {
+      d.x = event.clientX;
+      d.y = event.clientY;
+    }
+
+    const target = d.active && !cancelled ? targetAt(d.x, d.y) : null;
+    drag = null;
+
+    cancelAnimationFrame(scrollFrame);
+    d.ghost?.remove();
+    d.card.classList.remove("dragging");
+    clearHover();
+
+    if (d.card.hasPointerCapture(d.pointerId)) {
+      d.card.releasePointerCapture(d.pointerId);
+    }
+
+    if (d.active) {
+      suppressClickUntil = Date.now() + 400;
+      if (target) move(d.id, target.dataset.zone);
+    }
+  }
+
+  window.addEventListener("pointerup", event => {
+    if (drag?.pointerId === event.pointerId) {
+      finishDrag(false, event);
+    }
+  });
+
+  window.addEventListener("pointercancel", event => {
+    if (drag?.pointerId === event.pointerId) finishDrag(true);
+  });
+
+  window.addEventListener("blur", () => finishDrag(true));
+
+  window.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+
+    finishDrag(true);
+    state().selected = null;
+    render();
+  });
+
+  // 使用瀏覽器合成音效，不需外部音訊檔。
+  function playSound(success) {
+    if (!soundEnabled) return;
+
+    try {
+      const AudioAPI = window.AudioContext || window.webkitAudioContext;
+      if (!AudioAPI) return;
+
+      audioContext ||= new AudioAPI();
+
+      const play = () => {
+        if (!soundEnabled) return;
+
+        const notes = success
+          ? [523.25, 659.25, 783.99, 1046.5]
+          : [349.23, 293.66, 261.63];
+
+        notes.forEach((frequency, index) => {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+
+          const start = audioContext.currentTime + .03 +
+            index * (success ? .13 : .19);
+          const duration = success ? .32 : .24;
+
+          oscillator.type = "sine";
+          oscillator.frequency.value = frequency;
+
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(.12, start + .02);
+          gain.gain.exponentialRampToValueAtTime(.001, start + duration);
+
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(start);
+          oscillator.stop(start + duration + .03);
+
+          oscillator.onended = () => {
+            oscillator.disconnect();
+            gain.disconnect();
+          };
+        });
+      };
+
+      if (audioContext.state === "suspended") {
+        audioContext.resume().then(play).catch(() => {});
+      } else {
+        play();
+      }
+    } catch {
+      // 音效不可用時，仍可正常作答。
+    }
+  }
+
+  $("check").addEventListener("click", () => {
+    const s = state();
+
+    if (s.load !== "ready") {
+      message("", "圖片尚未載入完成，請稍候。");
+      return;
+    }
+
+    const success = s.slots.every(
+      (id, index) => id === question().answer[index]
+    );
+    const missing = s.slots.filter(id => !id).length;
+
+    s.checked = true;
+    s.selected = null;
+    s.message = [
+      success ? "你好棒，答對了！" : "再檢查一下哦！",
+      success
+        ? `第 ${current + 1} 題完成！你找出了正確的岩層順序。`
+        : missing
+          ? `還有 ${missing} 格未放入圖片，完成後再試一次。`
+          : "暖紅色虛線框中的圖片需要調整，再仔細觀察看看。",
+      success ? "success" : "error"
+    ];
+
+    render();
+    playSound(success);
+  });
+
+  $("reset").addEventListener("click", () => {
+    finishDrag(true);
+
+    const s = state();
+    s.slots = Array(6).fill(null);
+    s.selected = null;
+    s.checked = false;
+    s.message = ["", "本題圖片已回到圖片區，再試一次吧！", ""];
+
+    render();
+  });
+
+  $("return").addEventListener("click", () => {
+    if (state().selected) move(state().selected, "bank");
+  });
+
+  $("soundButton").addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    $("soundButton").textContent = `音效：${soundEnabled ? "開" : "關"}`;
+    $("soundButton").setAttribute("aria-pressed", String(soundEnabled));
+  });
+
+  $("retry").addEventListener("click", () => {
+    loadQuestion(current, true);
+  });
+
+  document.querySelectorAll("[data-question]").forEach(button => {
+    button.addEventListener("click", () => {
+      finishDrag(true);
+      state().selected = null;
+
+      current = Number(button.dataset.question);
+      render();
+
+      if (state().load === "idle") loadQuestion(current);
+    });
+  });
+
+  render();
+
+  // 開啟網頁後，自動預載三題圖片。
+  QUESTIONS.forEach((_, index) => loadQuestion(index));
+})();
+</script>
+
+
+</body></html>

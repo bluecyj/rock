@@ -3,6 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>岩層時光旅行</title>
 
+<!-- 引入 html2canvas 庫以進行區域畫面截圖 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <style>
 :root {
   --paper: #fffaf0;
@@ -443,6 +446,7 @@ footer {
         <button class="primary" id="check">檢視正確答案</button>
         <button class="btn" id="reset">重新排列本題</button>
         <button class="btn" id="return" disabled="">移回圖片區</button>
+        <button class="btn" id="downloadBtn">下載結果圖片</button>
       </div>
 
       <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
@@ -720,6 +724,7 @@ footer {
 
     const version = ++s.version;
     const image = new Image();
+    image.crossOrigin = "anonymous";
     const src = QUESTIONS[index].url +
       (retry ? `?reload=${Date.now()}` : "");
 
@@ -1057,6 +1062,174 @@ footer {
     playSound(success);
   });
 
+  // 下載結果圖片功能 (檔名：題目1.png, 題目2.png, 題目3.png)
+  async function downloadResultImage() {
+    const s = state();
+    if (s.load !== "ready") {
+      message("", "圖片尚未載入完成，無法下載。");
+      return;
+    }
+
+    const fileName = `題目${current + 1}.png`;
+    const answerPanel = document.querySelector(".answer-panel");
+    const actions = answerPanel.querySelector(".actions");
+
+    // 截圖時暫時隱藏操作按鈕區
+    if (actions) actions.style.visibility = "hidden";
+
+    try {
+      if (typeof html2canvas === "function") {
+        const canvas = await html2canvas(answerPanel, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#fffaf0",
+          logging: false
+        });
+
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } else {
+        fallbackDownloadCanvas(fileName);
+      }
+    } catch (err) {
+      fallbackDownloadCanvas(fileName);
+    } finally {
+      if (actions) actions.style.visibility = "visible";
+    }
+  }
+
+  // 備用畫布繪製備份機制（若 html2canvas 無法執行時自動轉為 Canvas 繪製下載）
+  function fallbackDownloadCanvas(fileName) {
+    const q = question();
+    const s = state();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const w = 1200;
+    const h = 650;
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.fillStyle = "#fffaf0";
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.strokeStyle = "#bca17e";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(12, 12, w - 24, h - 24);
+
+    ctx.fillStyle = "#604b3b";
+    ctx.font = "bold 28px 'Microsoft JhengHei', sans-serif";
+    ctx.fillText("排出岩層的時間順序", 40, 60);
+
+    const filled = s.slots.filter(Boolean).length;
+    ctx.font = "18px 'Microsoft JhengHei', sans-serif";
+    ctx.fillStyle = "#8c7965";
+    ctx.fillText(`已放入 ${filled} / 6 張`, w - 200, 60);
+
+    const slotW = 160;
+    const slotH = 240;
+    const startX = 40;
+    const gap = (w - 80 - 6 * slotW) / 5;
+    const slotY = 90;
+
+    s.slots.forEach((id, idx) => {
+      const x = startX + idx * (slotW + gap);
+
+      ctx.fillStyle = "#8c7965";
+      ctx.font = "16px 'Microsoft JhengHei', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`第 ${idx + 1} 步`, x + slotW / 2, slotY - 12);
+
+      let bgColor = "#fae8b8";
+      let borderColor = "#c69e59";
+      if (s.checked) {
+        if (id === q.answer[idx]) {
+          bgColor = "#e4ecdb";
+          borderColor = "#739379";
+        } else {
+          bgColor = "#f4ddce";
+          borderColor = "#c47d61";
+        }
+      }
+
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(x, slotY, slotW, slotH);
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, slotY, slotW, slotH);
+
+      if (id && s.image && s.image.complete) {
+        const [cx, cy, cw, ch] = q.crops[id];
+        const pad = 8;
+        const imgW = slotW - pad * 2;
+        const imgH = slotH - pad * 2 - 25;
+
+        try {
+          ctx.drawImage(s.image, cx, cy, cw, ch, x + pad, slotY + pad, imgW, imgH);
+        } catch (e) {}
+
+        ctx.fillStyle = "#604b3b";
+        ctx.font = "bold 14px 'Microsoft JhengHei', sans-serif";
+        ctx.fillText(`圖片 ${id}`, x + slotW / 2, slotY + slotH - 12);
+      } else {
+        ctx.fillStyle = "#ac8349";
+        ctx.font = "bold 44px 'Microsoft JhengHei', sans-serif";
+        ctx.fillText(String(idx + 1), x + slotW / 2, slotY + slotH / 2);
+        ctx.font = "14px 'Microsoft JhengHei', sans-serif";
+        ctx.fillText("放入圖片", x + slotW / 2, slotY + slotH / 2 + 30);
+      }
+    });
+
+    const timelineY = slotY + slotH + 60;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#8e775a";
+    ctx.font = "bold 22px 'Microsoft JhengHei', sans-serif";
+    ctx.fillText("老", 40, timelineY + 7);
+    ctx.font = "16px 'Microsoft JhengHei', sans-serif";
+    ctx.fillText("過去", 75, timelineY + 5);
+
+    ctx.textAlign = "right";
+    ctx.fillText("現在", w - 75, timelineY + 5);
+    ctx.font = "bold 22px 'Microsoft JhengHei', sans-serif";
+    ctx.fillText("新", w - 40, timelineY + 7);
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#c4b08a";
+    ctx.lineWidth = 4;
+    ctx.moveTo(130, timelineY);
+    ctx.lineTo(w - 130, timelineY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.fillStyle = "#c4b08a";
+    ctx.moveTo(w - 125, timelineY);
+    ctx.lineTo(w - 138, timelineY - 8);
+    ctx.lineTo(w - 138, timelineY + 8);
+    ctx.closePath();
+    ctx.fill();
+
+    const [msgTitle, msgDetail] = s.message;
+    if (msgTitle) {
+      ctx.textAlign = "center";
+      ctx.fillStyle = s.message[2] === "success" ? "#547d60" : "#af674c";
+      ctx.font = "bold 24px 'Microsoft JhengHei', sans-serif";
+      ctx.fillText(msgTitle, w / 2, timelineY + 70);
+      if (msgDetail) {
+        ctx.font = "16px 'Microsoft JhengHei', sans-serif";
+        ctx.fillStyle = "#8c7965";
+        ctx.fillText(msgDetail, w / 2, timelineY + 100);
+      }
+    }
+
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
   $("reset").addEventListener("click", () => {
     finishDrag(true);
 
@@ -1072,6 +1245,8 @@ footer {
   $("return").addEventListener("click", () => {
     if (state().selected) move(state().selected, "bank");
   });
+
+  $("downloadBtn").addEventListener("click", downloadResultImage);
 
   $("soundButton").addEventListener("click", () => {
     soundEnabled = !soundEnabled;

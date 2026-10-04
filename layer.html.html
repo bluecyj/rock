@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>地球構造大挑戰</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2canvas for canvas screenshot -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Google Fonts: Zen Maru Gothic for warm handwritten touch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #FAF6EF;
+      background-image: radial-gradient(#E8DFD0 1.2px, transparent 1.2px);
+      background-size: 20px 20px;
+      color: #4A3E3D;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* 手繪手作立體按鈕與卡片效果 */
+    .hand-card {
+      background: #FFFFFF;
+      border: 3px solid #5C4B40;
+      border-radius: 18px;
+      box-shadow: 4px 5px 0px #5C4B40;
+    }
+
+    .hand-btn {
+      border: 2.5px solid #5C4B40;
+      border-radius: 14px;
+      box-shadow: 3px 4px 0px #5C4B40;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .hand-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 2px 0px #5C4B40;
+    }
+
+    /* 可拖曳手繪標籤（待選區：觸控友善與彈性字級） */
+    .drag-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #FFFDF9;
+      color: #3D2F28;
+      border: 2px solid #5C4B40;
+      border-radius: 9999px;
+      padding: clamp(0.25rem, 1vw, 0.35rem) clamp(0.5rem, 1.8vw, 0.85rem);
+      font-size: clamp(0.75rem, 1.8vw, 0.88rem);
+      font-weight: 700;
+      box-shadow: 2px 3px 0px #5C4B40;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      will-change: transform;
+      transition: box-shadow 0.15s ease;
+      z-index: 20;
+      white-space: nowrap;
+    }
+
+    /* 拖曳中的手繪浮起特效，使用硬體加速變形 */
+    .drag-chip.is-dragging {
+      cursor: grabbing !important;
+      box-shadow: 6px 10px 20px rgba(92, 75, 64, 0.35);
+      z-index: 9999 !important;
+      opacity: 0.95;
+    }
+
+    /* 放置在作答畫布上的標籤：依據底圖縮放比例 (--board-scale) 全動態調整大小與邊界，絕不超出白色方框 */
+    .drag-chip.placed {
+      position: absolute;
+      background-color: #FFF9E6;
+      border-color: #7C4A28;
+      border-width: max(1.2px, calc(2px * var(--board-scale, 1)));
+      box-shadow: calc(1.5px * var(--board-scale, 1)) calc(1.5px * var(--board-scale, 1)) 0px #7C4A28;
+      font-size: max(8px, calc(12.5px * var(--board-scale, 1)));
+      padding: calc(2px * var(--board-scale, 1)) calc(6.5px * var(--board-scale, 1));
+      transform: translate(-50%, -50%);
+      line-height: 1.15;
+    }
+
+    /* 檢視答案後的成功與錯誤提示特效（維持中心錨定） */
+    .chip-correct {
+      background-color: #E8F5E9 !important;
+      border-color: #2E7D32 !important;
+      color: #1B5E20 !important;
+      box-shadow: 0 0 10px rgba(46, 125, 50, 0.45), calc(1.5px * var(--board-scale, 1)) calc(1.5px * var(--board-scale, 1)) 0px #2E7D32 !important;
+    }
+
+    .chip-wrong {
+      background-color: #FFEBEE !important;
+      border-color: #C62828 !important;
+      color: #B71C1C !important;
+      animation: shake 0.4s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+      20%, 60% { transform: translate(-50%, -50%) translateX(-4px); }
+      40%, 80% { transform: translate(-50%, -50%) translateX(4px); }
+    }
+
+    /* 畫布容器鎖定比例並禁止多餘溢出 */
+    #board-wrapper {
+      position: relative;
+      touch-action: none;
+      --board-scale: 1;
+    }
+
+    /* 自訂訊息通知彈窗 */
+    #toast-modal {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+  <header class="max-w-6xl mx-auto w-full mb-4">
+    <div class="hand-card p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4 bg-[#FFFBF3]">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#E58F65] border-2 border-[#5C4B40] flex items-center justify-center text-xl md:text-2xl shadow-[2px_2px_0px_#5C4B40]">
+          🌍
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold text-[#5C4B40] tracking-wide">
+            地球構造大挑戰
+          </h1>
+          <p class="text-xs md:text-sm text-[#876F60] font-medium mt-0.5">
+            把待選區的答案拖曳到作答區對應的白色格子中。<br>完成後請先檢視答案，完全正確則可一鍵截圖！
+          </p>
+        </div>
+      </div>
+
+      <!-- 操作按鈕列 -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+        <button id="btn-reset" class="hand-btn flex-1 md:flex-none px-4 py-2.5 bg-[#F9DFB8] hover:bg-[#F5D2A0] text-[#5C4B40] font-bold text-sm md:text-base flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          重來一次
+        </button>
+        <button id="btn-check" class="hand-btn flex-1 md:flex-none px-4 py-2.5 bg-[#F3A66B] hover:bg-[#E89251] text-[#3D2214] font-bold text-sm md:text-base flex items-center justify-center gap-1.5 shadow-[3px_4px_0px_#5C4B40]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          檢視答案
+        </button>
+        <button id="btn-capture" class="hand-btn flex-1 md:flex-none px-5 py-2.5 bg-[#9BC4A5] hover:bg-[#8AB895] text-[#2F4435] font-bold text-sm md:text-base flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          一鍵截圖
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+    
+    <!-- 左側區域：底圖畫布 (8 欄) -->
+    <section class="lg:col-span-8 flex flex-col items-center">
+      <!-- 截圖目標區塊包含標題、對齊的計時區與作答畫布，使交卷證明完整齊全 -->
+      <div id="capture-zone" class="hand-card p-3 md:p-4 bg-white w-full">
+        <!-- 頂部標題與計時區同行水平對齊 -->
+        <div class="flex items-center justify-between pb-2 border-b-2 border-dashed border-[#DFD5C6] mb-3">
+          <span class="text-xs md:text-sm font-bold text-[#7A6455] flex items-center gap-1.5">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#E58F65]"></span>
+            作答區(圖片來源：翰林出版社)
+          </span>
+          <!-- 與「作答區」文字水平並排對齊 -->
+          <div class="flex items-center gap-1.5 px-3 py-1 bg-[#FFFDF7] border-2 border-[#5C4B40] rounded-full shadow-[2px_2px_0px_#5C4B40] text-xs font-bold text-[#5C4B40] select-none">
+            <span class="inline-block animate-pulse text-[#E58F65]">⏱️</span>
+            <span>使用時間：<span id="timer-display" class="font-mono text-[#C45E28]">00:00</span></span>
+          </div>
+        </div>
+
+        <!-- 畫布核心容器 -->
+        <div class="relative w-full rounded-xl overflow-hidden border-2 border-[#5C4B40] bg-[#FFF]">
+          <div id="board-wrapper" class="relative w-full overflow-hidden select-none">
+            <!-- 地球構造底圖 -->
+            <img 
+              id="bg-image"
+              src="https://bluecyj.github.io/rock/ch.jpg" 
+              alt="地球構造剖面底圖" 
+              crossorigin="anonymous"
+              class="w-full h-auto block pointer-events-none select-none"
+              onerror="this.onerror=null; this.src='https://placehold.co/900x600/FAF6EF/5C4B40?text=底圖載入中...請確認網路連線';"
+            />
+            <!-- 放置在畫布上的標籤放置層 -->
+            <div id="canvas-overlay" class="absolute inset-0 pointer-events-auto"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右側區域：待選答案區 (4 欄) -->
+    <section class="lg:col-span-4 flex flex-col w-full">
+      <div class="hand-card p-4 md:p-5 bg-[#FFFDF9] w-full">
+        <div class="flex items-center justify-between pb-2 border-b-2 border-dashed border-[#DFD5C6] mb-4">
+          <h2 class="text-base md:text-lg font-bold text-[#5C4B40] flex items-center gap-2">
+            <span>🏷️</span> 待選答案區
+          </h2>
+          <span id="label-count" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F0E6D8] text-[#7A6455]">
+            剩餘 11 個
+          </span>
+        </div>
+
+        <p class="text-xs text-[#876F60] mb-3 leading-relaxed">
+          👉 <strong>操作指引</strong>：按住答案即可拖進作答區；注意<strong>「並非所有答案都需要用上」</strong>！在作答區點擊已放置答案可隨時收回。
+        </p>
+
+        <!-- 待選標籤池 (Flex 緊密排列) -->
+        <div id="bank-container" class="min-h-[160px] p-3 rounded-xl border-2 border-dashed border-[#C8B8A6] bg-[#F7F2E7]/60 flex flex-wrap gap-2.5 items-start content-start">
+          <!-- 標籤將由 JS 動態隨機生成 -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 訊息彈窗提示 -->
+  <div id="toast-modal" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 scale-95 transition-all duration-300">
+    <div class="hand-card px-5 py-3 bg-[#FFFDF7] text-[#5C4B40] font-bold text-sm md:text-base flex items-center gap-2 shadow-lg">
+      <span id="toast-icon">✨</span>
+      <span id="toast-msg">提示訊息</span>
+    </div>
+  </div>
+
+  <!-- 姓名輸入彈窗 -->
+  <div id="name-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300 p-4">
+    <div class="hand-card p-5 md:p-6 bg-[#FFFDF7] max-w-sm w-full flex flex-col gap-3.5 transform transition-transform duration-300 scale-95" id="name-modal-box">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">📝</span>
+        <h3 class="text-lg font-extrabold text-[#5C4B40]">請輸入您的姓名</h3>
+      </div>
+      <p class="text-xs text-[#876F60] leading-relaxed">
+        將為您產出專屬成果圖，檔案名稱將自動設定為「地球構造_姓名.png」喔！
+      </p>
+      <input 
+        type="text" 
+        id="user-name-input" 
+        placeholder="例如：王小明" 
+        maxlength="20"
+        class="w-full px-3.5 py-2.5 border-2 border-[#5C4B40] rounded-xl bg-white text-[#4A3E3D] font-bold text-sm outline-none focus:ring-2 focus:ring-[#E58F65] shadow-inner"
+      />
+      <div class="flex items-center justify-end gap-2.5 mt-2">
+        <button id="btn-cancel-name" class="hand-btn px-4 py-2 bg-[#EADCC9] hover:bg-[#DDD0BC] text-[#5C4B40] font-bold text-sm">
+          取消
+        </button>
+        <button id="btn-confirm-name" class="hand-btn px-4 py-2 bg-[#9BC4A5] hover:bg-[#8AB895] text-[#2F4435] font-bold text-sm flex items-center gap-1.5">
+          <span>確認截圖</span> 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="max-w-6xl mx-auto w-full mt-6">
+    <div style="text-align: right; margin-top: 40px; padding-bottom: 20px; font-size: 0.9em; color: #666; font-family: 'Zen Maru Gothic', sans-serif;">
+      by Jay`s Lab 紅樓老頭子 系統版本：v2.1
+    </div>
+  </footer>
+
+  <script>
+    // 預設標籤資料庫：包含 8 個正確構造 + 3 個誘答干擾選項（斷層、中洋脊、海溝）
+    const INITIAL_LABELS = [
+      "岩石圈",
+      "地殼",
+      "軟流圈",
+      "大陸地殼",
+      "地函",
+      "海洋地殼",
+      "上部地函",
+      "地核",
+      "斷層",
+      "中洋脊",
+      "海溝"
+    ];
+
+    // 依據標準答案底圖精準校準的 8 大構造中心座標百分比（干擾項不在其中）
+    const TARGET_SLOTS = {
+      "大陸地殼": { x: 38.5, y: 13.5 },
+      "海洋地殼": { x: 91.0, y: 15.5 },
+      "岩石圈":   { x: 26.5, y: 19.5 },
+      "軟流圈":   { x: 26.5, y: 29.5 },
+      "上部地函": { x: 12.5, y: 25.5 },
+      "地殼":     { x: 75.5, y: 41.5 },
+      "地函":     { x: 74.5, y: 61.0 },
+      "地核":     { x: 74.5, y: 92.5 }
+    };
+
+    // 原生 Web Audio API 合成音效
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // 答對音效：歡快清脆的四音階大三和弦琶音 (C5 -> E5 -> G5 -> C6)
+    function playSuccessSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+
+          gain.gain.setValueAtTime(0, now + i * 0.1);
+          gain.gain.linearRampToValueAtTime(0.25, now + i * 0.1 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.35);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.36);
+        });
+      } catch (e) {
+        console.warn('音效播放失敗:', e);
+      }
+    }
+
+    // 答錯音效：溫柔的低音雙響提示音 (Eb3 -> Bb2)
+    function playErrorSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const notes = [311.13, 233.08];
+
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.15);
+
+          gain.gain.setValueAtTime(0, now + i * 0.15);
+          gain.gain.linearRampToValueAtTime(0.2, now + i * 0.15 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.28);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + i * 0.15);
+          osc.stop(now + i * 0.15 + 0.3);
+        });
+      } catch (e) {
+        console.warn('音效播放失敗:', e);
+      }
+    }
+
+    // 狀態追蹤清單
+    let labelsState = [];
+
+    // 計時器變數
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    // DOM 元素快取
+    const bankContainer = document.getElementById('bank-container');
+    const boardWrapper = document.getElementById('board-wrapper');
+    const canvasOverlay = document.getElementById('canvas-overlay');
+    const bgImage = document.getElementById('bg-image');
+    const labelCountEl = document.getElementById('label-count');
+    const btnReset = document.getElementById('btn-reset');
+    const btnCapture = document.getElementById('btn-capture');
+    const btnCheck = document.getElementById('btn-check');
+    const toastModal = document.getElementById('toast-modal');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = document.getElementById('toast-icon');
+    const timerDisplay = document.getElementById('timer-display');
+
+    // 依據載具畫布即時寬度，動態換算縮放係數 (--board-scale)
+    function updateBoardScale() {
+      if (!boardWrapper) return;
+      const rect = boardWrapper.getBoundingClientRect();
+      const width = rect.width || boardWrapper.clientWidth;
+      if (!width) return;
+      const scale = Math.max(0.48, Math.min(1.3, width / 700));
+      boardWrapper.style.setProperty('--board-scale', scale.toFixed(3));
+    }
+
+    // 姓名彈窗元素
+    const nameModal = document.getElementById('name-modal');
+    const nameModalBox = document.getElementById('name-modal-box');
+    const userNameInput = document.getElementById('user-name-input');
+    const btnCancelName = document.getElementById('btn-cancel-name');
+    const btnConfirmName = document.getElementById('btn-confirm-name');
+
+    // 計時器格式化 (分:秒)
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // 啟動計時器
+    function startTimer() {
+      if (isTimerRunning) return;
+      clearInterval(timerInterval);
+      isTimerRunning = true;
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        if (timerDisplay) {
+          timerDisplay.innerText = formatTime(timerSeconds);
+        }
+      }, 1000);
+    }
+
+    // 停止/暫停計時器
+    function stopTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+    }
+
+    // 重設計時器
+    function resetTimer() {
+      stopTimer();
+      timerSeconds = 0;
+      if (timerDisplay) {
+        timerDisplay.innerText = "00:00";
+      }
+      startTimer();
+    }
+
+    // 顯示自定義訊息 Toast
+    let toastTimeout = null;
+    function showToast(message, icon = "✨") {
+      toastMsg.innerText = message;
+      toastIcon.innerText = icon;
+      toastModal.classList.remove('opacity-0', 'scale-95');
+      toastModal.classList.add('opacity-100', 'scale-100');
+      
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastModal.classList.remove('opacity-100', 'scale-100');
+        toastModal.classList.add('opacity-0', 'scale-95');
+      }, 2000);
+    }
+
+    // Fisher-Yates 隨機洗牌演算法
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // 初始化狀態：生成包含 11 個標籤的隨機陣列
+    function initLabels() {
+      const shuffled = shuffleArray(INITIAL_LABELS);
+      labelsState = shuffled.map((text, idx) => ({
+        id: `label-${idx}`,
+        text: text,
+        placed: false,
+        dragging: false,
+        xPercent: 0,
+        yPercent: 0
+      }));
+      renderLabels();
+    }
+
+    // 核心渲染：待選區與畫布嚴格互斥
+    function renderLabels() {
+      bankContainer.innerHTML = '';
+      canvasOverlay.innerHTML = '';
+
+      let remainingCount = 0;
+
+      labelsState.forEach((item) => {
+        if (item.dragging) return;
+
+        const chip = document.createElement('div');
+        chip.id = item.id;
+        chip.innerText = item.text;
+        chip.classList.add('drag-chip');
+
+        if (!item.placed) {
+          remainingCount++;
+          chip.title = "按住拖曳到底圖";
+          setupPointerDrag(chip, item);
+          bankContainer.appendChild(chip);
+        } else {
+          chip.classList.add('placed');
+          chip.style.left = `${item.xPercent}%`;
+          chip.style.top = `${item.yPercent}%`;
+          chip.title = "按住可調整位置，或點擊退回待選區";
+          setupPointerDrag(chip, item);
+          canvasOverlay.appendChild(chip);
+        }
+      });
+
+      labelCountEl.innerText = `剩餘 ${remainingCount} 個`;
+      if (remainingCount <= 3) {
+        // 當只剩誘答項或少數項時變換提示色
+        labelCountEl.classList.remove('bg-[#F0E6D8]', 'text-[#7A6455]');
+        labelCountEl.classList.add('bg-[#D1E7DD]', 'text-[#0F5132]');
+      } else {
+        labelCountEl.classList.remove('bg-[#D1E7DD]', 'text-[#0F5132]');
+        labelCountEl.classList.add('bg-[#F0E6D8]', 'text-[#7A6455]');
+      }
+    }
+
+    // 指標拖曳系統
+    function setupPointerDrag(element, itemState) {
+      let isDragging = false;
+      let startClientX = 0, startClientY = 0;
+      let currentClientX = 0, currentClientY = 0;
+      let chipInitialRect = null;
+      let hasMovedSignificantly = false;
+      let animFrameId = null;
+      let ghostElement = null;
+
+      const onPointerMove = (e) => {
+        if (!isDragging || !ghostElement) return;
+        currentClientX = e.clientX;
+        currentClientY = e.clientY;
+
+        const dx = currentClientX - startClientX;
+        const dy = currentClientY - startClientY;
+
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          hasMovedSignificantly = true;
+        }
+      };
+
+      const updateTransform = () => {
+        if (!isDragging || !ghostElement) return;
+        const x = currentClientX - (chipInitialRect.width / 2);
+        const y = currentClientY - (chipInitialRect.height / 2);
+        ghostElement.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+        animFrameId = requestAnimationFrame(updateTransform);
+      };
+
+      const cleanupDrag = () => {
+        isDragging = false;
+        itemState.dragging = false;
+        cancelAnimationFrame(animFrameId);
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerCancel);
+
+        if (ghostElement && ghostElement.parentNode) {
+          ghostElement.parentNode.removeChild(ghostElement);
+        }
+        ghostElement = null;
+      };
+
+      const onPointerUp = (e) => {
+        if (!isDragging) return;
+
+        const dropX = e.clientX;
+        const dropY = e.clientY;
+        const wasPlaced = itemState.placed;
+
+        cleanupDrag();
+
+        // 點擊退回
+        if (!hasMovedSignificantly && wasPlaced) {
+          itemState.placed = false;
+          showToast(`已退回「${itemState.text}」`, '↩️');
+          renderLabels();
+          return;
+        }
+
+        const boardRect = boardWrapper.getBoundingClientRect();
+
+        const isInsideBoard = (
+          dropX >= boardRect.left &&
+          dropX <= boardRect.right &&
+          dropY >= boardRect.top &&
+          dropY <= boardRect.bottom
+        );
+
+        if (isInsideBoard) {
+          const dropRelativeX = dropX - boardRect.left;
+          const dropRelativeY = dropY - boardRect.top;
+
+          const clampedX = Math.max(12, Math.min(dropRelativeX, boardRect.width - 12));
+          const clampedY = Math.max(10, Math.min(dropRelativeY, boardRect.height - 10));
+
+          itemState.xPercent = (clampedX / boardRect.width) * 100;
+          itemState.yPercent = (clampedY / boardRect.height) * 100;
+          itemState.placed = true;
+          showToast(`「${itemState.text}」標籤放置完成！`, '🎯');
+        } else {
+          itemState.placed = false;
+          showToast(`「${itemState.text}」已收回待選區`, '📦');
+        }
+
+        renderLabels();
+      };
+
+      const onPointerCancel = () => {
+        if (!isDragging) return;
+        cleanupDrag();
+        renderLabels();
+      };
+
+      element.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        isDragging = true;
+        hasMovedSignificantly = false;
+
+        chipInitialRect = element.getBoundingClientRect();
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+        currentClientX = e.clientX;
+        currentClientY = e.clientY;
+
+        itemState.dragging = true;
+
+        ghostElement = document.createElement('div');
+        ghostElement.innerText = itemState.text;
+        ghostElement.className = 'drag-chip is-dragging';
+        ghostElement.style.position = 'fixed';
+        ghostElement.style.top = '0px';
+        ghostElement.style.left = '0px';
+        ghostElement.style.margin = '0';
+        ghostElement.style.width = `${chipInitialRect.width}px`;
+        ghostElement.style.height = `${chipInitialRect.height}px`;
+        ghostElement.style.pointerEvents = 'none';
+        ghostElement.style.zIndex = '99999';
+
+        const initialX = currentClientX - (chipInitialRect.width / 2);
+        const initialY = currentClientY - (chipInitialRect.height / 2);
+        ghostElement.style.transform = `translate3d(${initialX}px, ${initialY}px, 0px)`;
+
+        document.body.appendChild(ghostElement);
+
+        renderLabels();
+        updateTransform();
+
+        window.addEventListener('pointermove', onPointerMove, { passive: false });
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerCancel);
+      });
+    }
+
+    // 重來一次
+    btnReset.addEventListener('click', () => {
+      initLabels();
+      resetTimer();
+      showToast('已重設！標籤與計時已重新開始', '🔄');
+    });
+
+    // 檢視答案：嚴格支援誘答項判斷
+    btnCheck.addEventListener('click', () => {
+      const boardRect = boardWrapper.getBoundingClientRect();
+      if (!boardRect.width || !boardRect.height) return;
+
+      let correctCount = 0;
+      let wrongCount = 0;
+      let placedDistractorCount = 0;
+      let unplacedCorrectCount = 0;
+
+      const TOLERANCE_X = 9.0;
+      const TOLERANCE_Y = 7.5;
+
+      labelsState.forEach((item) => {
+        const chipEl = document.getElementById(item.id);
+        const target = TARGET_SLOTS[item.text];
+
+        if (chipEl) {
+          chipEl.classList.remove('chip-correct', 'chip-wrong');
+        }
+
+        // 若屬於 8 大標準答案之一
+        if (target) {
+          if (!item.placed) {
+            unplacedCorrectCount++;
+            wrongCount++;
+          } else if (chipEl) {
+            const chipRect = chipEl.getBoundingClientRect();
+            const currentCenterX = ((chipRect.left + chipRect.width / 2 - boardRect.left) / boardRect.width) * 100;
+            const currentCenterY = ((chipRect.top + chipRect.height / 2 - boardRect.top) / boardRect.height) * 100;
+
+            const dx = Math.abs(currentCenterX - target.x);
+            const dy = Math.abs(currentCenterY - target.y);
+
+            if (dx <= TOLERANCE_X && dy <= TOLERANCE_Y) {
+              correctCount++;
+              chipEl.classList.add('chip-correct');
+            } else {
+              wrongCount++;
+              chipEl.classList.add('chip-wrong');
+            }
+          }
+        } else {
+          // 若屬於誘答選項（斷層、中洋脊、海溝）
+          if (item.placed) {
+            wrongCount++;
+            placedDistractorCount++;
+            if (chipEl) {
+              chipEl.classList.add('chip-wrong');
+            }
+          }
+          // 若誘答項留在待選區，表示學生成功避開干擾，不計入錯誤
+        }
+      });
+
+      if (wrongCount === 0 && correctCount === 8) {
+        playSuccessSound();
+        showToast('太厲害了！全部答對，而且成功避開了誘答干擾！🎉', '🏆');
+      } else {
+        playErrorSound();
+        if (placedDistractorCount > 0) {
+          showToast(`有 ${placedDistractorCount} 個干擾選項被誤放進畫布囉，請再想想！`, '⚠️');
+        } else if (unplacedCorrectCount > 0) {
+          showToast(`還有 ${unplacedCorrectCount} 個正確標籤尚未放置喔！`, '💪');
+        } else {
+          showToast(`還有標籤位置放錯了，再檢查看看！`, '👀');
+        }
+      }
+    });
+
+    // 姓名輸入彈窗
+    function openNameModal() {
+      nameModal.classList.remove('opacity-0', 'pointer-events-none');
+      nameModal.classList.add('opacity-100', 'pointer-events-auto');
+      nameModalBox.classList.remove('scale-95');
+      nameModalBox.classList.add('scale-100');
+      userNameInput.value = '';
+      setTimeout(() => userNameInput.focus(), 150);
+    }
+
+    function closeNameModal() {
+      nameModal.classList.remove('opacity-100', 'pointer-events-auto');
+      nameModal.classList.add('opacity-0', 'pointer-events-none');
+      nameModalBox.classList.remove('scale-100');
+      nameModalBox.classList.add('scale-95');
+    }
+
+    btnCapture.addEventListener('click', () => {
+      stopTimer();
+      openNameModal();
+    });
+
+    btnCancelName.addEventListener('click', () => {
+      closeNameModal();
+      startTimer();
+    });
+
+    nameModal.addEventListener('click', (e) => {
+      if (e.target === nameModal) {
+        closeNameModal();
+        startTimer();
+      }
+    });
+
+    userNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        btnConfirmName.click();
+      }
+    });
+
+    // 確認執行截圖
+    btnConfirmName.addEventListener('click', async () => {
+      const rawName = userNameInput.value.trim();
+      const sanitizedName = rawName.replace(/[\\/:*?"<>|]/g, '');
+      const fileName = sanitizedName ? `地球構造_${sanitizedName}.png` : `地球構造.png`;
+
+      closeNameModal();
+      showToast('正在產生高畫質截圖中...', '📷');
+
+      const captureTarget = document.getElementById('capture-zone');
+
+      try {
+        const canvas = await html2canvas(captureTarget, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#FFFFFF',
+          logging: false
+        });
+
+        const imageURL = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageURL;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        showToast(`截圖完成！已儲存「${fileName}」`, '🎉');
+      } catch (err) {
+        console.error('截圖失敗:', err);
+        showToast('截圖失敗，請確認網路連線是否正常。', '⚠️');
+      }
+    });
+
+    // 初始化啟動
+    window.addEventListener('DOMContentLoaded', () => {
+      initLabels();
+      startTimer();
+      updateBoardScale();
+
+      if (bgImage) {
+        bgImage.addEventListener('load', updateBoardScale);
+      }
+
+      window.addEventListener('resize', updateBoardScale);
+      if (window.ResizeObserver && boardWrapper) {
+        new ResizeObserver(updateBoardScale).observe(boardWrapper);
+      }
+    });
+  </script>
+</body>
+</html>

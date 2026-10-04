@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正逆斷層與地形變化模擬</title>
+    <!-- 引入 Tailwind CSS 作為排版基礎 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入手繪風格字體 Klee One -->
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Klee One', cursive;
+            background-color: #fcf9f2; /* 溫暖的紙張背景色 */
+            color: #5c4033; /* 深棕色字體 */
+            margin: 0;
+            overflow: hidden; /* 隱藏全局捲動條，以 3D 畫布為主 */
+        }
+        
+        .hand-drawn-border {
+            border: 3px solid #5c4033;
+            /* 模擬手繪不規則圓角 */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            background-color: #fffaf0;
+            box-shadow: 4px 4px 0px rgba(92, 64, 51, 0.2);
+        }
+
+        .hand-drawn-btn {
+            border: 2px solid #5c4033;
+            border-radius: 20px 255px 15px 225px / 255px 15px 225px 15px;
+            background-color: #decfb0;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .hand-drawn-btn:hover {
+            background-color: #c9b794;
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px rgba(92, 64, 51, 0.3);
+        }
+
+        .hand-drawn-btn:active {
+            transform: translate(0px, 0px);
+            box-shadow: 0px 0px 0px rgba(92, 64, 51, 0.3);
+        }
+
+        /* 自訂手繪風滑桿 */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #d67a55; /* 溫暖的磚紅色 */
+            border: 2px solid #5c4033;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 2px 2px 0px rgba(92, 64, 51, 0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #decfb0;
+            border-radius: 10px;
+            border: 1px solid #5c4033;
+        }
+        
+        /* 隱藏元素用的 class */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col md:flex-row h-screen w-screen">
+
+    <div class="w-full md:w-1/3 h-full p-6 flex flex-col z-10 overflow-y-auto relative">
+        <div class="hand-drawn-border p-6 flex-1 flex flex-col">
+            <h1 class="text-3xl font-bold mb-2 text-center">正逆斷層模擬室</h1>
+            <p class="text-sm text-center mb-6 text-gray-600">觀察斷層滑動，河流因此造成的地形如何改變！</p>
+            
+            <!-- 控制區 -->
+            <div class="mb-4 space-y-5">
+                
+                <!-- 模式切換按鈕 -->
+                <div>
+                    <label class="block text-lg font-bold mb-1">⚙️ 運動模式</label>
+                    <div class="flex gap-2">
+                        <button id="modeManualBtn" class="hand-drawn-btn flex-1 py-1 text-sm bg-[#c9b794] font-bold">手動模式</button>
+                        <button id="modeForceBtn" class="hand-drawn-btn flex-1 py-1 text-sm bg-[#decfb0] font-bold">受力模式</button>
+                    </div>
+                </div>
+
+                <!-- 河流方向控制 -->
+                <div>
+                    <label class="block text-lg font-bold mb-1">🌊 河流方向</label>
+                    <div class="flex gap-2">
+                        <button id="flowL2R" class="hand-drawn-btn flex-1 py-1 text-sm bg-[#c9b794] font-bold">下磐 ➡️ 上磐</button>
+                        <button id="flowR2L" class="hand-drawn-btn flex-1 py-1 text-sm bg-[#decfb0] font-bold">上磐 ⬅️ 下磐</button>
+                    </div>
+                </div>
+
+                <!-- 區塊：手動模式滑桿 (預設顯示) -->
+                <div id="manualControls" class="space-y-4">
+                    <div>
+                        <label class="block text-lg font-bold mb-1">【上磐】滑動</label>
+                        <input type="range" id="hangingWallSlider" min="-2" max="2" step="0.05" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-lg font-bold mb-1">【下磐】滑動</label>
+                        <input type="range" id="footwallSlider" min="-2" max="2" step="0.05" value="0">
+                    </div>
+                </div>
+
+                <!-- 區塊：受力模式滑桿 (預設隱藏) -->
+                <div id="forceControls" class="space-y-4 hidden border-2 border-dashed border-[#d67a55] p-3 rounded-xl bg-orange-50/50">
+                    <div>
+                        <div class="flex justify-between text-md font-bold mb-2 text-[#d67a55]">
+                            <span>⬅️ 張力</span>
+                            
+                            <span>擠壓力 ➡️</span>
+                        </div>
+                        <!-- 滑桿預設在中間 0 -->
+                        <input type="range" id="forceSlider" min="-2" max="2" step="0.05" value="0">
+                    </div>
+                    <p class="text-xs text-center text-gray-500 mt-2">提示：向左拉模擬板塊張裂，向右拉模擬板塊聚合。</p>
+                </div>
+
+                <button id="resetBtn" class="hand-drawn-btn w-full py-2 text-lg font-bold mt-2">
+                    🔄 恢復原狀
+                </button>
+            </div>
+
+            <!-- 解說區 -->
+            <div class="mt-auto pt-4 border-t-2 border-dashed border-[#5c4033]">
+                <h2 id="statusTitle" class="text-xl font-bold mb-2 text-[#d67a55]">目前狀態：穩定</h2>
+                <p id="statusDesc" class="text-lg leading-relaxed">
+                    目前地層未發生明顯錯動，河流平穩地在地表流動。<br>
+                    您可以試著拉動上方的滑桿，觀察斷層滑動對地形與河流的影響。
+                </p>
+            </div>
+        </div>
+
+        <!-- 嵌入專屬簽名檔 -->
+        <div style="text-align: right; margin-top: 15px; font-size: 0.9em; color: #666; font-family: sans-serif;">
+            by Jay's Lab 紅樓老頭子 系統版本：v1.8
+        </div>
+    </div>
+
+    <div id="canvas-container" class="w-full md:w-2/3 h-full relative cursor-move bg-[#fcf9f2]">
+        <div class="absolute top-4 right-4 text-sm text-gray-500 bg-white/70 px-2 py-1 rounded hand-drawn-border pointer-events-none z-10">
+            🖱️ 拖曳可旋轉視角 / 滾輪可縮放
+        </div>
+    </div>
+
+    <script>
+        // 基本場景設定
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xfcf9f2);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 3, 16);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+        // 打光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
+        dirLight.position.set(5, 10, 8);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.left = -10;
+        dirLight.shadow.camera.right = 10;
+        dirLight.shadow.camera.top = 10;
+        dirLight.shadow.camera.bottom = -10;
+        scene.add(dirLight);
+
+        // 材質與幾何設定
+        const materials = [
+            new THREE.MeshLambertMaterial({ color: 0xb5c18e }), // 頂層
+            new THREE.MeshLambertMaterial({ color: 0xdecfb0 }), // 中層
+            new THREE.MeshLambertMaterial({ color: 0x8c7a6b })  // 底層
+        ];
+
+        const extrudeSettings = { depth: 4, bevelEnabled: false };
+        const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x5c4033, linewidth: 2 });
+
+        function createLayerMesh(shape, materialIndex) {
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.translate(0, 0, -2);
+            const mesh = new THREE.Mesh(geometry, materials[materialIndex]);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, edgeMaterial);
+            mesh.add(line);
+            return mesh;
+        }
+
+        const footwallGroup = new THREE.Group();
+        const hangingWallGroup = new THREE.Group();
+
+        // 建立兩磐形狀
+        const fwTop = new THREE.Shape(); fwTop.moveTo(-6, 3); fwTop.lineTo(0, 3); fwTop.lineTo(2, 1); fwTop.lineTo(-6, 1);
+        const fwMid = new THREE.Shape(); fwMid.moveTo(-6, 1); fwMid.lineTo(2, 1); fwMid.lineTo(4, -1); fwMid.lineTo(-6, -1);
+        const fwBot = new THREE.Shape(); fwBot.moveTo(-6, -1); fwBot.lineTo(4, -1); fwBot.lineTo(6, -3); fwBot.lineTo(-6, -3);
+        footwallGroup.add(createLayerMesh(fwTop, 0), createLayerMesh(fwMid, 1), createLayerMesh(fwBot, 2));
+        scene.add(footwallGroup);
+
+        const hwTop = new THREE.Shape(); hwTop.moveTo(0, 3); hwTop.lineTo(8, 3); hwTop.lineTo(8, 1); hwTop.lineTo(2, 1);
+        const hwMid = new THREE.Shape(); hwMid.moveTo(2, 1); hwMid.lineTo(8, 1); hwMid.lineTo(8, -1); hwMid.lineTo(4, -1);
+        const hwBot = new THREE.Shape(); hwBot.moveTo(4, -1); hwBot.lineTo(8, -1); hwBot.lineTo(8, -3); hwBot.lineTo(6, -3);
+        hangingWallGroup.add(createLayerMesh(hwTop, 0), createLayerMesh(hwMid, 1), createLayerMesh(hwBot, 2));
+        scene.add(hangingWallGroup);
+
+        // 文字標籤
+        function createTextSprite(message) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillRoundedRect = function(x, y, w, h, r) {
+                this.beginPath(); this.moveTo(x+r, y); this.lineTo(x+w-r, y); this.quadraticCurveTo(x+w, y, x+w, y+r);
+                this.lineTo(x+w, y+h-r); this.quadraticCurveTo(x+w, y+h, x+w-r, y+h); this.lineTo(x+r, y+h);
+                this.quadraticCurveTo(x, y+h, x, y+h-r); this.lineTo(x, y+r); this.quadraticCurveTo(x, y, x+r, y); this.fill();
+            }
+            ctx.fillRoundedRect(10, 10, 236, 108, 15);
+            ctx.font = 'bold 40px "Klee One", sans-serif';
+            ctx.fillStyle = '#5c4033';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(message, 128, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false }); 
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(3, 1.5, 1);
+            return sprite;
+        }
+
+        const labelLeft = createTextSprite("下磐"); labelLeft.position.set(-3, 4.5, 0); footwallGroup.add(labelLeft);
+        const labelRight = createTextSprite("上磐"); labelRight.position.set(4, 4.5, 0); hangingWallGroup.add(labelRight);
+
+        // 初始化箭頭與水流
+        const dirVector = new THREE.Vector3(1, 0, 0);
+        // 水流箭頭 (藍色)
+        const arrowLeft = new THREE.ArrowHelper(dirVector, new THREE.Vector3(0,0,0), 1.5, 0x0055ff, 0.5, 0.4);
+        const arrowRight = new THREE.ArrowHelper(dirVector, new THREE.Vector3(0,0,0), 1.5, 0x0055ff, 0.5, 0.4);
+        scene.add(arrowLeft); scene.add(arrowRight);
+
+        // 新增：受力箭頭 (紅色)
+        const arrowForceLeft = new THREE.ArrowHelper(dirVector, new THREE.Vector3(0,0,0), 2.5, 0xff0000, 1, 0.8);
+        const arrowForceRight = new THREE.ArrowHelper(dirVector, new THREE.Vector3(0,0,0), 2.5, 0xff0000, 1, 0.8);
+        arrowForceLeft.visible = false; 
+        arrowForceRight.visible = false;
+        scene.add(arrowForceLeft); scene.add(arrowForceRight);
+
+        const waterMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0x7bb2d9, transparent: true, opacity: 0.85, side: THREE.DoubleSide
+        });
+        let waterMesh = new THREE.Mesh(new THREE.BufferGeometry(), waterMaterial);
+        scene.add(waterMesh);
+
+        // 狀態與 UI 元素
+        let currentFlow = 'L2R';
+        let currentMode = 'manual'; // 'manual' 或 'force'
+
+        const fwSlider = document.getElementById('footwallSlider');
+        const hwSlider = document.getElementById('hangingWallSlider');
+        const forceSlider = document.getElementById('forceSlider');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusDesc = document.getElementById('statusDesc');
+
+        // 模式切換邏輯
+        const modeManualBtn = document.getElementById('modeManualBtn');
+        const modeForceBtn = document.getElementById('modeForceBtn');
+        const manualControls = document.getElementById('manualControls');
+        const forceControls = document.getElementById('forceControls');
+
+        function switchMode(mode) {
+            currentMode = mode;
+            // 切換模式時歸零，避免視覺錯亂
+            fwSlider.value = 0;
+            hwSlider.value = 0;
+            forceSlider.value = 0;
+
+            if (mode === 'manual') {
+                modeManualBtn.classList.replace('bg-[#decfb0]', 'bg-[#c9b794]');
+                modeForceBtn.classList.replace('bg-[#c9b794]', 'bg-[#decfb0]');
+                manualControls.classList.remove('hidden');
+                forceControls.classList.add('hidden');
+                arrowForceLeft.visible = false;
+                arrowForceRight.visible = false;
+            } else {
+                modeForceBtn.classList.replace('bg-[#decfb0]', 'bg-[#c9b794]');
+                modeManualBtn.classList.replace('bg-[#c9b794]', 'bg-[#decfb0]');
+                forceControls.classList.remove('hidden');
+                manualControls.classList.add('hidden');
+            }
+            updateScene();
+        }
+
+        modeManualBtn.addEventListener('click', () => switchMode('manual'));
+        modeForceBtn.addEventListener('click', () => switchMode('force'));
+
+        function updateScene() {
+            let sf = 0, sh = 0;
+            let f = 0;
+
+            if (currentMode === 'manual') {
+                sf = parseFloat(fwSlider.value);
+                sh = parseFloat(hwSlider.value);
+                arrowForceLeft.visible = false;
+                arrowForceRight.visible = false;
+            } else {
+                f = parseFloat(forceSlider.value);
+                // 滑桿 < 0 代表張力 (往外拉) -> 產生正斷層 -> 左磐(下磐)往左上，右磐(上磐)往右下
+                // 滑桿 > 0 代表擠壓 (往內推) -> 產生逆斷層 -> 左磐(下磐)往右下，右磐(上磐)往左上
+                sf = f;
+                sh = -f;
+                
+                if (Math.abs(f) > 0.05) {
+                    arrowForceLeft.visible = true;
+                    arrowForceRight.visible = true;
+                    if (f < 0) {
+                        // 張力：箭頭向外
+                        arrowForceLeft.setDirection(new THREE.Vector3(-1, 0, 0));
+                        arrowForceRight.setDirection(new THREE.Vector3(1, 0, 0));
+                    } else {
+                        // 擠壓力：箭頭向內
+                        arrowForceLeft.setDirection(new THREE.Vector3(1, 0, 0));
+                        arrowForceRight.setDirection(new THREE.Vector3(-1, 0, 0));
+                    }
+                } else {
+                    arrowForceLeft.visible = false;
+                    arrowForceRight.visible = false;
+                }
+            }
+
+            // 更新地層位置 (沿著斜率 -1 的斷層面滑動)
+            footwallGroup.position.set(sf, -sf, 0);
+            hangingWallGroup.position.set(sh, -sh, 0);
+
+            // 定位紅色受力箭頭 (放在 3D 模型的正前方 Z=2.5，看起來像是在推/拉斷塊)
+            if (currentMode === 'force') {
+                arrowForceLeft.position.set(-3 + sf, 0.5 - sf, 2.5);
+                arrowForceRight.position.set(4 + sh, 0.5 - sh, 2.5);
+            }
+
+            // 計算斷層處的幾何關鍵座標，用來生成水體
+            const x_left = -6 + sf;
+            const y_up = 3 - sf;
+            const x_fault_up = 0 + sf;
+            const x_right = 8 + sh;
+            const y_down = 3 - sh;
+            const x_fault_down = 0 + sh;
+
+            // 水體繪製與判斷邏輯...
+            const waterShape = new THREE.Shape();
+            const waterThickness = 0.3;
+            let currentWaterDepth = 2;
+            let currentWaterTranslateZ = -1;
+
+            if (currentFlow === 'L2R') {
+                if (y_up >= y_down) {
+                    // 正斷層 / 瀑布
+                    waterShape.moveTo(x_left, y_up); waterShape.lineTo(x_fault_up, y_up); waterShape.lineTo(x_fault_down, y_down); waterShape.lineTo(x_right, y_down);
+                    waterShape.lineTo(x_right, y_down + waterThickness); waterShape.lineTo(x_fault_down, y_down + waterThickness); waterShape.lineTo(x_fault_up, y_up + waterThickness); waterShape.lineTo(x_left, y_up + waterThickness);
+                    
+                    arrowLeft.setDirection(new THREE.Vector3(1, 0, 0)); arrowRight.setDirection(new THREE.Vector3(1, 0, 0));
+                    arrowLeft.position.set(-3 + sf, y_up + waterThickness + 0.5, 0); arrowLeft.visible = true;
+                    arrowRight.position.set(4 + sh, y_down + waterThickness + 0.5, 0); arrowRight.visible = true;
+                } else {
+                    // 逆斷層 / 堰塞湖
+                    const lakeSurfaceY = y_down; 
+                    const lakeSurfaceX = x_fault_up - (lakeSurfaceY - y_up);
+                    waterShape.moveTo(x_left, y_up); waterShape.lineTo(x_fault_up, y_up); waterShape.lineTo(lakeSurfaceX, lakeSurfaceY); waterShape.lineTo(x_left, lakeSurfaceY);
+                    
+                    arrowLeft.setDirection(new THREE.Vector3(1, 0, 0));
+                    arrowLeft.position.set(-3 + sf, lakeSurfaceY + 0.5, 0); arrowLeft.visible = true;
+                    arrowRight.visible = false;
+                    const waterRise = y_down - y_up;
+                    currentWaterDepth = Math.min(4, 2 + waterRise * 10);
+                    currentWaterTranslateZ = -currentWaterDepth / 2;
+                }
+            } else {
+                if (y_down >= y_up) {
+                    // 逆斷層 / 瀑布
+                    waterShape.moveTo(x_right, y_down); waterShape.lineTo(x_fault_down, y_down); waterShape.lineTo(x_fault_down, y_up); waterShape.lineTo(x_fault_up, y_up); waterShape.lineTo(x_left, y_up);
+                    waterShape.lineTo(x_left, y_up + waterThickness); waterShape.lineTo(x_fault_down - waterThickness, y_up + waterThickness); waterShape.lineTo(x_fault_down - waterThickness, y_down + waterThickness); waterShape.lineTo(x_right, y_down + waterThickness);
+                    
+                    arrowLeft.setDirection(new THREE.Vector3(-1, 0, 0)); arrowRight.setDirection(new THREE.Vector3(-1, 0, 0));
+                    arrowLeft.position.set(-3 + sf, y_up + waterThickness + 0.5, 0); arrowLeft.visible = true;
+                    arrowRight.position.set(4 + sh, y_down + waterThickness + 0.5, 0); arrowRight.visible = true;
+                } else {
+                    // 正斷層 / 堰塞湖
+                    const lakeSurfaceY = y_up;
+                    waterShape.moveTo(x_right, y_down); waterShape.lineTo(x_fault_down, y_down); waterShape.lineTo(x_fault_up, lakeSurfaceY); waterShape.lineTo(x_right, lakeSurfaceY);
+                    
+                    arrowRight.setDirection(new THREE.Vector3(-1, 0, 0));
+                    arrowRight.position.set(4 + sh, lakeSurfaceY + 0.5, 0); arrowRight.visible = true;
+                    arrowLeft.visible = false;
+                    const waterRise = y_up - y_down;
+                    currentWaterDepth = Math.min(4, 2 + waterRise * 10);
+                    currentWaterTranslateZ = -currentWaterDepth / 2;
+                }
+            }
+
+            // 更新水體 3D 模型
+            if (waterMesh.geometry) waterMesh.geometry.dispose();
+            const newGeo = new THREE.ExtrudeGeometry(waterShape, { depth: currentWaterDepth, bevelEnabled: false });
+            newGeo.translate(0, 0, currentWaterTranslateZ);
+            waterMesh.geometry = newGeo;
+
+            // 狀態文字更新
+            const relativeSlip = sh - sf;
+            
+            if (relativeSlip > 0.05) {
+                if (currentFlow === 'L2R') {
+                    statusTitle.innerText = "目前狀態：正斷層 (產生瀑布)";
+                    statusTitle.className = "text-xl font-bold mb-2 text-blue-600";
+                    statusDesc.innerHTML = "【正斷層】上磐相對下磐<strong class='text-blue-700'>向下</strong>沿著斷層面滑落。<br><br>地表的河流因為地層斷裂產生的高低落差，形成了壯觀的<strong>瀑布</strong>！";
+                } else {
+                    statusTitle.innerText = "目前狀態：正斷層 (形成堰塞湖)";
+                    statusTitle.className = "text-xl font-bold mb-2 text-red-600";
+                    statusDesc.innerHTML = "【正斷層】上磐相對下磐<strong class='text-blue-700'>向下</strong>沿著斷層面滑落。<br><br>🚨 <strong>地質大反轉！</strong>水流遇到相對高起的下磐崖壁，無法越過，積水形成了<strong>堰塞湖</strong>！";
+                }
+            } else if (relativeSlip < -0.05) {
+                if (currentFlow === 'L2R') {
+                    statusTitle.innerText = "目前狀態：逆斷層 (形成堰塞湖)";
+                    statusTitle.className = "text-xl font-bold mb-2 text-red-600";
+                    statusDesc.innerHTML = "【逆斷層】上磐相對下磐<strong class='text-red-700'>向上</strong>沿著斷層面推擠。<br><br>隆起的上磐猶如天然的大壩般阻擋了原有的河道，導致水流無法宣洩，在上方積水形成了<strong>堰塞湖</strong>！";
+                } else {
+                    statusTitle.innerText = "目前狀態：逆斷層 (產生瀑布)";
+                    statusTitle.className = "text-xl font-bold mb-2 text-blue-600";
+                    statusDesc.innerHTML = "【逆斷層】上磐相對下磐<strong class='text-red-700'>向上</strong>沿著斷層面推擠。<br><br>🚨 <strong>地質大反轉！</strong>水流經過隆起的上磐後，順著斷崖往下掉落，反而形成了<strong>瀑布</strong>！";
+                }
+            } else {
+                statusTitle.innerText = "目前狀態：穩定";
+                statusTitle.className = "text-xl font-bold mb-2 text-[#d67a55]";
+                statusDesc.innerHTML = "目前地層處於未發生明顯錯動的穩定狀態，河流平穩地在地表流動。<br><br>您可以切換模式拉動滑桿，觀察力量與地形的關係。";
+            }
+        }
+
+        // 綁定事件監聽
+        const btnL2R = document.getElementById('flowL2R');
+        const btnR2L = document.getElementById('flowR2L');
+
+        btnL2R.addEventListener('click', () => {
+            currentFlow = 'L2R';
+            btnL2R.classList.replace('bg-[#decfb0]', 'bg-[#c9b794]');
+            btnR2L.classList.replace('bg-[#c9b794]', 'bg-[#decfb0]');
+            updateScene();
+        });
+
+        btnR2L.addEventListener('click', () => {
+            currentFlow = 'R2L';
+            btnR2L.classList.replace('bg-[#decfb0]', 'bg-[#c9b794]');
+            btnL2R.classList.replace('bg-[#c9b794]', 'bg-[#decfb0]');
+            updateScene();
+        });
+
+        fwSlider.addEventListener('input', updateScene);
+        hwSlider.addEventListener('input', updateScene);
+        forceSlider.addEventListener('input', updateScene);
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            fwSlider.value = 0;
+            hwSlider.value = 0;
+            forceSlider.value = 0;
+            
+            currentFlow = 'L2R';
+            btnL2R.classList.replace('bg-[#decfb0]', 'bg-[#c9b794]');
+            btnR2L.classList.replace('bg-[#c9b794]', 'bg-[#decfb0]');
+
+            updateScene();
+            camera.position.set(0, 3, 16);
+            controls.target.set(0, 0, 0);
+        });
+
+        // 初始化
+        updateScene();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        window.onload = function() {
+            animate();
+        };
+    </script>
+</body>
+</html>

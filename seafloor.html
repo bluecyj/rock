@@ -809,7 +809,58 @@ measureStep({title:'海底熱流',key:'heat',pred:'predHeat',ymax:320,what:'熱�
   <tr><td>限制</td><td>指出具體的不確定性或延伸問題</td><td>有提到限制</td><td>未提及</td></tr></table>
   <p>得分：＿＿＿／12　　教師評語：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</p></div>
   <div class="center noprint"><button class="btn big" id="pr">🖨 列印／存成 PDF</button> <button class="btn alt" id="bk">✏️ 返回修改</button></div>`);
-  s.querySelector('#pr').onclick=()=>window.print();s.querySelector('#bk').onclick=form;
+  
+  // -- START OF MODIFICATION --
+  s.querySelector('#pr').onclick = async () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOS && navigator.share) {
+      try {
+        // Prepare HTML content for export
+        const reportClone = s.querySelector('.report').cloneNode(true);
+        const style = document.querySelector('style').innerHTML;
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>深海調查報告 - ${esc(S.name)}</title>
+            <style>
+              ${style}
+              body { background: #fff; padding: 20px; }
+              .report { border: none; box-shadow: none; max-width: none; }
+            </style>
+          </head>
+          <body>
+            ${reportClone.outerHTML}
+          </body>
+          </html>
+        `;
+        
+        // Create a Blob from the HTML content
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const file = new File([blob], `深海調查報告_${esc(S.name)}.html`, { type: 'text/html' });
+
+        // Use Web Share API
+        await navigator.share({
+          files: [file],
+          title: '深海調查報告',
+          text: '這是我的深海調查報告',
+        });
+        toast('報告已開啟分享選單');
+      } catch (err) {
+        console.error('Share failed:', err);
+        // Fallback if sharing fails or is cancelled
+        window.print();
+      }
+    } else {
+      // Desktop or standard behavior
+      window.print();
+    }
+  };
+  // -- END OF MODIFICATION --
+
+  s.querySelector('#bk').onclick=form;
   guide('任務完成！');add(`<div class="task good">🎉 恭喜 ${esc(S.name)} 完成全部調查！</div>`);
   add('<p>回顧你走過的路：<b>觀察 → 提出假說 → 做預測 → 檢驗 → 淘汰</b>。你沒有被告知答案，而是用證據一步步排除了錯誤的想法。</p>');
   hist('1962 年，美國地質學家赫斯（Harry Hess）發表海底擴張的構想，他自己稱之為一篇「地球詩篇」（geopoetry），因為當時證據還不夠。短短幾年內，你今天走過的這些證據接連出現；到 1968 年前後，海底擴張和大陸漂移被整合成「板塊構造學說」。');
@@ -826,5 +877,10 @@ $('#resetBtn').onclick=()=>{if(!confirm('確定要清除所有進度、從頭開
 S.maxStep=clamp(S.maxStep|0,0,STEPS.length-1);S.step=clamp(S.step|0,0,S.maxStep);
 renderNotebook();go(S.step);requestAnimationFrame(frame);
 </script>
+
+<!-- 老頭子專屬簽名檔 -->
+<div style="text-align: right; margin-top: 40px; padding-bottom: 20px; font-size: 0.9em; color: #666;">
+  by Jay`s Lab 紅樓老頭子 系統版本：v1.1
+</div>
 </body>
 </html>

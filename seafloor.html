@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>深海調查員：海底擴張之謎</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f5e9cf;--paper2:#fdf6e6;--ink:#4a3526;--ink2:#7a5c45;--sun:#f0b54f;--rust:#c8643b;--teal:#a9d0c8;--sand:#e2c08d;
+--font:"LXGW WenKai TC","Kaiti TC","STKaiti","BiauKai","DFKai-SB",serif;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--font);color:var(--ink);font-size:17px;line-height:1.7;background-color:var(--paper);
+background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .32  0 0 0 0 .18  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
+header{display:flex;align-items:center;gap:14px;padding:10px 18px;flex-wrap:wrap}
+.logo{font-size:36px;transform:rotate(-8deg)}
+h1{font-size:28px;margin:0;letter-spacing:3px;line-height:1.2}
+.sub{font-size:14px;color:var(--ink2)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.pill{font:inherit;font-size:14px;padding:2px 10px;border:2px solid var(--ink);background:var(--paper2);color:var(--ink);cursor:pointer;opacity:.45;
+border-radius:14px 4px 12px 5px/5px 12px 4px 14px}
+.pill.done{opacity:1;background:#f3dcae}.pill.cur{opacity:1;background:var(--sun);font-weight:700;transform:rotate(-2deg)}
+.pill:disabled{cursor:not-allowed}
+main{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;padding:0 16px 20px}
+@media(max-width:1000px){main{grid-template-columns:1fr}}
+.card{background:var(--paper2);border:2px solid var(--ink);border-radius:18px 6px 16px 8px/8px 16px 6px 18px;box-shadow:4px 5px 0 rgba(74,53,38,.18);padding:12px}
+canvas{display:block;width:100%;touch-action:none;border-radius:10px}
+#scene{height:330px}#chart{height:250px;margin-top:10px}
+body[data-layout=single] #scene{height:560px}body[data-layout=single] #chart{display:none}
+body[data-layout=html] #canvWrap{display:none}
+#htmlStage{display:none}body[data-layout=html] #htmlStage{display:block}
+@media(max-width:640px){#scene{height:260px}#chart{height:220px}body[data-layout=single] #scene{height:440px}}
+#controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;min-height:10px}
+.btn{font:inherit;font-size:16px;padding:6px 16px;min-height:44px;border:2px solid var(--ink);color:var(--ink);background:var(--sun);cursor:pointer;
+border-radius:14px 4px 12px 5px/5px 12px 4px 14px;box-shadow:2px 3px 0 rgba(74,53,38,.3)}
+.btn:active{transform:translate(1px,2px);box-shadow:1px 1px 0 rgba(74,53,38,.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.alt{background:#f3dcae}.btn.teal{background:var(--teal)}.btn.big{font-size:19px;padding:8px 22px}
+.btn.sm{font-size:15px;min-height:38px;padding:4px 12px}.btn.tiny{font-size:14px;min-height:34px;padding:2px 10px}
+.stat{font-size:15px;background:#fff6e2;border:1.5px dashed var(--ink2);padding:4px 10px;border-radius:10px}
+aside{display:flex;flex-direction:column;gap:14px}
+#guide{max-height:66vh;overflow:auto}
+@media(max-width:1000px){#guide{max-height:none}}
+.gtitle{display:flex;align-items:center;gap:8px;font-size:19px;border-bottom:2px dashed var(--ink2);padding-bottom:6px;margin-bottom:6px}
+.captain{font-size:30px}
+.gblock{margin:10px 0;animation:pop .35s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.task{background:#fff1cf;border:2px solid var(--sun);border-radius:12px 4px 12px 4px;padding:8px 10px}
+.task.good{background:#e6f1e2;border-color:#8a9a5b}
+.warnbox{background:#fbe1d6;border:2px solid var(--rust);border-radius:12px 4px 12px 4px;padding:8px 10px}
+.q{background:#fff;border:2px solid var(--ink);border-radius:14px 5px 12px 6px/6px 12px 5px 14px;padding:10px}
+.qt{font-weight:700;margin-bottom:6px}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{font:inherit;font-size:16px;text-align:left;padding:6px 10px;min-height:42px;border:1.8px solid var(--ink2);background:var(--paper2);color:var(--ink);cursor:pointer;border-radius:10px 4px 10px 4px}
+.opt.sel{background:#f7d58e;border-color:var(--ink)}
+.opt:disabled{cursor:default}
+.fb{margin-top:6px;font-size:16px}.fb.good{color:#4f6b2d}.fb.hmm{color:#a24a24}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inp{font:inherit;font-size:16px;padding:6px 8px;border:2px solid var(--ink2);border-radius:8px;background:#fffdf7;color:var(--ink);width:100%}
+.inp.num{width:120px}
+textarea.inp{resize:vertical;margin-bottom:6px}
+.lbl{display:block}
+.notebook{background:repeating-linear-gradient(#fdf6e6 0 29px,#e8d9b8 29px 30px);min-height:200px}
+.tabs{display:flex;gap:4px;margin-bottom:8px}
+.tabs button{font:inherit;font-size:15px;flex:1;border:2px solid var(--ink);background:#f3dcae;color:var(--ink);border-radius:10px 10px 2px 2px;cursor:pointer;padding:3px}
+.tabs button.on{background:var(--sun);font-weight:700}
+.clue{display:flex;gap:8px;background:#fffaf0;border:1.5px solid var(--ink2);border-radius:8px 3px 8px 3px;padding:6px 8px;margin-bottom:6px;font-size:15px;transform:rotate(-.4deg)}
+.clue:nth-child(even){transform:rotate(.5deg)}
+.ci{font-size:22px}.csrc{font-size:12px;color:var(--ink2)}
+.note{background:#fffaf0;border-left:4px solid var(--sun);padding:5px 8px;margin-bottom:6px;font-size:15px;white-space:pre-wrap}
+.muted{color:var(--ink2);font-size:15px}
+.hyp{border:2px solid var(--ink);border-radius:10px 4px 10px 4px;padding:6px 8px;margin-bottom:8px;background:#fffaf0}
+.hyp .badge{float:right;font-size:13px;padding:0 8px;border-radius:8px;border:1.5px solid var(--ink)}
+.hyp.u .badge{background:#eee}.hyp.ok .badge{background:#cfe3b8}.hyp.out{opacity:.55}.hyp.out .badge{background:#f2b8a4}.hyp.out b{text-decoration:line-through}
+.hd{font-size:14px;color:var(--ink2)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff8e8;padding:8px 18px;border-radius:14px;transition:.3s;z-index:9;pointer-events:none;font-size:16px}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.telegram{background:#fbf1d8;border:2px solid var(--ink);padding:18px 22px;position:relative;border-radius:4px;box-shadow:inset 0 0 40px rgba(160,120,70,.18);max-width:760px;margin:10px auto}
+.telegram.small{padding:10px 12px;font-size:15px}
+.tg-head{font-weight:700;font-size:20px;letter-spacing:4px;border-bottom:2px double var(--ink);margin-bottom:6px}
+.telegram.small .tg-head{font-size:16px;letter-spacing:1px}
+.tg-date{color:var(--ink2)}
+.stamp{position:absolute;right:18px;top:14px;border:3px solid var(--rust);color:var(--rust);padding:0 10px;font-size:22px;font-weight:700;transform:rotate(12deg);opacity:.8;border-radius:6px}
+.tgmap{width:100%;max-width:460px;display:block;margin:6px auto}
+.tl{width:100%}.tl text,.tgmap text{font-family:var(--font)}
+.h2{margin:4px 0 8px;font-size:23px}
+.shapes{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.shape{font:inherit;font-size:17px;border:2px solid var(--ink);background:#fffaf0;color:var(--ink);padding:8px;cursor:pointer;border-radius:16px 5px 14px 6px/6px 14px 5px 16px}
+.shape svg{width:100%;display:block;border-radius:8px}.shape.sel{background:#f7d58e;transform:rotate(-1.5deg);box-shadow:3px 4px 0 rgba(74,53,38,.3)}
+.hypcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:8px 0}
+.hcard{border:2px solid var(--ink);border-top:8px solid var(--c);background:#fffaf0;padding:8px 10px;border-radius:10px 4px 10px 4px;font-size:15px}
+.hcard p{margin:4px 0 0}
+.matrix{width:100%;border-collapse:collapse;margin:8px 0;font-size:15px}
+.matrix th,.matrix td{border:1.5px solid var(--ink2);padding:5px;text-align:center}
+.matrix td.ev{text-align:left}
+.matrix th{background:#f3dcae}
+.cell{font:inherit;font-size:22px;width:56px;height:44px;border:2px dashed var(--ink2);background:#fffdf7;color:var(--ink);cursor:pointer;border-radius:8px}
+.cell.match{background:#d9ebc9;border-style:solid}.cell.diff{background:#f7d3c4;border-style:solid}
+.exp{font-size:12px;color:var(--ink2)}
+.matrix tr.why{display:none}.matrix.judged tr.why{display:table-row}
+.matrix tr.why td{text-align:left;background:#fff8e6;font-size:14px}
+.center{text-align:center;margin:10px 0}
+.sl{display:flex;align-items:center;gap:8px;font-size:16px}
+.sl input{width:220px;accent-color:var(--rust)}
+.meter{display:inline-block;width:140px;height:16px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,#e7a86b,#8a9a5b)}
+.cer h3{margin:14px 0 4px;font-size:19px}
+.rad{display:block;margin:3px 0;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:15px;text-align:left;border:2px solid var(--ink2);background:#fffaf0;color:var(--ink);padding:4px 10px;border-radius:12px 4px 12px 4px;cursor:pointer}
+.chip.on{background:#f7d58e;border-color:var(--ink)}
+.report{background:#fffdf5;border:2px solid var(--ink);padding:20px 26px;max-width:820px;margin:auto}
+.report h2{text-align:center;letter-spacing:4px}
+.report table{border-collapse:collapse;width:100%;font-size:15px}.report td,.report th{border:1px solid var(--ink2);padding:4px 6px}
+.check li{list-style:none}
+@media print{header,aside,#controls,.noprint,#toast{display:none!important}main{display:block;padding:0}.card{border:none;box-shadow:none;background:none}body{background:#fff}}
+</style>
+</head>
+<body data-layout="html">
+<header>
+  <div class="logo">🌊</div>
+  <div><h1>深海調查員</h1><div class="sub">海底擴張之謎．1960 年代海洋探勘任務</div></div>
+  <nav class="pills" id="pills"></nav>
+  <button class="btn tiny alt" id="resetBtn">↺ 重新開始</button>
+</header>
+<main>
+  <section class="card" id="stageCard">
+    <div id="canvWrap"><canvas id="scene"></canvas><canvas id="chart"></canvas></div>
+    <div id="htmlStage"></div>
+    <div id="controls"></div>
+  </section>
+  <aside>
+    <div class="card" id="guide"><div class="gtitle"><span class="captain">🧑‍✈️</span><b id="guideTitle"></b></div><div id="guideBody"></div></div>
+    <div class="card notebook">
+      <div class="tabs"><button data-tab="clues" class="on">📌 線索</button><button data-tab="notes">✏️ 我的想法</button><button data-tab="hyp">⚖️ 假說看板</button></div>
+      <div id="nbBody"></div>
+    </div>
+  </aside>
+</main>
+<div id="toast"></div>
+
+<script>
+/* ================= 工具 ================= */
+const $=s=>document.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
+function rnd(n){const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s)}
+function vnoise(x){const i=Math.floor(x),f=x-i,u=f*f*(3-2*f);return(rnd(i)*(1-u)+rnd(i+1)*u)*2-1}
+function fbm(x){return vnoise(x)*.6+vnoise(x*2.13+17)*.28+vnoise(x*4.7+41)*.12}
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function niceTicks(a,b,n=6){const s0=(b-a)/n,m=Math.pow(10,Math.floor(Math.log10(s0))),r=s0/m,st=(r<1.5?1:r<3?2:r<7?5:10)*m,o=[];for(let v=Math.ceil(a/st)*st;v<=b+1e-9;v+=st)o.push(+v.toFixed(6));return o}
+const FONT='"LXGW WenKai TC","Kaiti TC","STKaiti","BiauKai","DFKai-SB",serif', INK='#4a3526';
+const DPR=Math.min(window.devicePixelRatio||1,2);
+
+/* ================= 世界模型：所有數據都由同一個擴張模型產生 ================= */
+const W={V:12,EDGE:1850, // 半擴張速率 12 公里/百萬年 = 1.2 公分/年
+ age(x){return Math.min(Math.abs(x),this.EDGE)/this.V},
+ depth(x){const ax=Math.min(Math.abs(x),2000),t=Math.min(ax,this.EDGE)/this.V;let d=2.5+0.3*Math.sqrt(t);
+  d-=0.42*Math.exp(-(((ax-24)/14)**2)); d+=0.95*Math.exp(-((x/8)**2));
+  d+=(0.3*Math.exp(-ax/350)+0.05)*fbm(x/16+100);
+  if(ax>this.EDGE){const s=(ax-this.EDGE)/(2000-this.EDGE),m=s*s*(3-2*s);d=d*(1-m)+0.15*m}return d},
+ sed(x){const t=this.age(x);return Math.max(2,6*t*(1+0.12*fbm(x/80+7))+4*Math.abs(fbm(x/9+3)))},
+ heat(x){const t=Math.max(this.age(x),0.2);return Math.min(300,Math.max(46,480/Math.sqrt(t)))}};
+// 簡化版地磁倒轉年表（正向時段，百萬年前）
+const NORMAL=[[0,.78],[.99,1.07],[1.78,1.95],[2.58,3.04],[3.11,3.22],[3.33,3.58],[4.19,4.3],[4.49,4.63],[4.8,4.9],[5,5.24],[5.89,6.14],[6.27,6.47],[6.57,6.7],[6.93,7.1]];
+function pol(t){for(const[a,b]of NORMAL)if(t>=a&&t<b)return 1;return -1}
+const MAG={X0:-90,X1:90,DX:.25};
+function magArray(v,off=0,seed=null){const n=Math.round((MAG.X1-MAG.X0)/MAG.DX)+1,raw=new Float32Array(n);
+ for(let i=0;i<n;i++){const x=MAG.X0+i*MAG.DX;raw[i]=pol(Math.abs(x-off)/v)}
+ const sg=1.6/MAG.DX,R=Math.ceil(sg*3),k=[];let ks=0;for(let j=-R;j<=R;j++){const w=Math.exp(-j*j/(2*sg*sg));k.push(w);ks+=w}
+ const o=new Float32Array(n);for(let i=0;i<n;i++){let s=0;for(let j=-R;j<=R;j++)s+=raw[clamp(i+j,0,n-1)]*k[j+R];o[i]=s/ks*260}
+ if(seed!==null)for(let i=0;i<n;i++){const x=MAG.X0+i*MAG.DX;o[i]+=35*fbm(x/1.3+seed*13.7)+25*fbm(x/9+seed*3.1)}
+ return o}
+function magAt(a,x){const f=(x-MAG.X0)/MAG.DX,i=Math.floor(f);if(i<0)return a[0];if(i>=a.length-1)return a[a.length-1];return lerp(a[i],a[i+1],f-i)}
+function corr(a,b){const n=a.length;let ma=0,mb=0;for(let i=0;i<n;i++){ma+=a[i];mb+=b[i]}ma/=n;mb/=n;let ab=0,aa=0,bb=0;for(let i=0;i<n;i++){const da=a[i]-ma,db=b[i]-mb;ab+=da*db;aa+=da*da;bb+=db*db}return ab/Math.sqrt(aa*bb||1)}
+const TRACK_OFF=[-5,-2,0,1,3,6];
+const TR=TRACK_OFF.map((o,i)=>magArray(12,o,i+1));
+const M12=magArray(12,0,null);
+function slabZ(x){return .25*x+.0009*x*x}
+function genQuakes(){const q=[];for(let i=0;i<230;i++){const x=460*Math.pow(Math.random(),1.25);q.push({x:+x.toFixed(1),z:+(slabZ(x)+3+Math.abs(gauss())*9).toFixed(1),s:1})}
+ for(let i=0;i<45;i++)q.push({x:+(40+Math.random()*380).toFixed(1),z:+(2+Math.random()*28).toFixed(1),s:0});
+ for(let i=0;i<15;i++)q.push({x:+(-90+Math.random()*80).toFixed(1),z:+(2+Math.random()*22).toFixed(1),s:0});
+ for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]]}return q}
+
+/* ================= 狀態與儲存 ================= */
+const KEY='seafloor-inquiry-v1';
+function fresh(){return{step:0,maxStep:0,name:'',clues:[],clueText:{},log:[],hyp:{A:'未檢驗',B:'未檢驗',C:'未檢驗'},sonar:[],zoom:false,pred1:null,
+ sed:[],predSed:[],heat:[],predHeat:[],tracks:[],matrix:{},rate:null,drills:[],quakes:[],dip:null,report:{claim:'',ev:[],reason:'',limit:''}}}
+let S;try{S=Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY))||{})}catch(e){S=fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const CLUES={
+ ridge:{icon:'⛰️',t:'大洋中央有一條綿延的海底山脈（中洋脊）',src:'聲納'},
+ rift:{icon:'🕳️',t:'中洋脊山頂正中央有一道凹陷的裂谷',src:'聲納'},
+ deepen:{icon:'📉',t:'離中洋脊越遠，海越深，而且左右大致對稱',src:'聲納'},
+ sed:{icon:'🟫',t:'沉積物：中洋脊頂端非常薄，越往兩側越厚',src:'震測儀'},
+ heat:{icon:'🔥',t:'熱流：中洋脊附近最高（數據較分散），往兩側逐漸降低',src:'熱流探針'},
+ mag:{icon:'🦓',t:'磁異常條帶與中洋脊平行，並以中洋脊為中心左右鏡像對稱',src:'磁力儀'},
+ magtime:{icon:'📜',t:'條帶的寬窄順序與陸地熔岩的「地磁倒轉年表」一致',src:'磁力儀＋陸地電報'},
+ rate:{icon:'📏',t:'由磁條帶推算出擴張速率',src:'模型擬合'},
+ drill:{icon:'🧪',t:'鑽探定年：岩石年齡隨距離增加，與預測相符；最老洋殼只有約 1.5～1.8 億年',src:'深海鑽探'},
+ trench:{icon:'🌋',t:'海溝下方的震源沿著一條傾斜帶分布，深達約 300 公里',src:'地震紀錄'}};
+const HYP={
+ A:{name:'A．海底固定說',c:'#8a9a5b',d:'海底是一整塊古老、不會移動的岩石，和大陸一樣老。中洋脊只是一座普通的海底山脈。'},
+ B:{name:'B．地球膨脹說',c:'#d98b7a',d:'地球像氣球一樣慢慢變大，中洋脊是地表被撐開的裂口，新岩石從裂口冒出來填補。（歷史上真的有科學家支持！）'},
+ C:{name:'C．海底擴張說',c:'#f0b54f',d:'中洋脊處的板塊被拉開，地函物質上升形成新洋殼；新洋殼往兩側移動，最後在別處沉回地球內部。地球大小不變。'}};
+const PRED_NAME={A:'平坦的海底平原',B:'像碗一樣，中間最深',C:'中間有山脈隆起'};
+const clueText=id=>S.clueText[id]||CLUES[id].t;
+
+/* ================= 手繪風繪圖 ================= */
+function sketchLine(ctx,x1,y1,x2,y2,{w=1,p=2}={}){const sd=x1*.137+y1*.711+x2*.373+y2*.531,dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+ for(let k=0;k<p;k++){const a=(rnd(sd+k*7.1)-.5)*2*w,b=(rnd(sd+k*3.3+1)-.5)*2*w,c=(rnd(sd+k*5.7+2)-.5)*3*w;ctx.beginPath();ctx.moveTo(x1+nx*a,y1+ny*a);ctx.quadraticCurveTo((x1+x2)/2+nx*c,(y1+y2)/2+ny*c,x2+nx*b,y2+ny*b);ctx.stroke()}}
+function sketchRect(ctx,x,y,w,h){sketchLine(ctx,x,y,x+w,y);sketchLine(ctx,x+w,y,x+w,y+h);sketchLine(ctx,x+w,y+h,x,y+h);sketchLine(ctx,x,y+h,x,y)}
+function pencil(ctx,pts,{color=INK,width=2}={}){if(pts.length<2)return;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';
+ ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(const p of pts)ctx.lineTo(p[0],p[1]);ctx.stroke();
+ ctx.globalAlpha=.3;ctx.lineWidth=width*.6;ctx.beginPath();ctx.moveTo(pts[0][0]+.8,pts[0][1]+.9);for(const p of pts)ctx.lineTo(p[0]+.8,p[1]+.9);ctx.stroke();ctx.restore()}
+function dot(ctx,x,y,r,fill,stroke=INK){ctx.save();ctx.beginPath();for(let i=0;i<=12;i++){const a=i/12*Math.PI*2,rr=r*(1+(rnd(x*.3+y*.7+i)-.5)*.25);ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}
+ ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.4;ctx.stroke()}ctx.restore()}
+
+class Chart{constructor(c){this.c=c;this.set({})}
+ set(o){Object.assign(this,{xmin:-2000,xmax:2000,ymin:0,ymax:1,inv:false},o);this.pad=Object.assign({l:62,r:18,t:24,b:40},o.pad||{});return this}
+ get w(){return this.c.clientWidth}get h(){return this.c.clientHeight}
+ X(x){return this.pad.l+(x-this.xmin)/(this.xmax-this.xmin)*(this.w-this.pad.l-this.pad.r)}
+ Y(y){const t=(y-this.ymin)/(this.ymax-this.ymin),ph=this.h-this.pad.t-this.pad.b;return this.inv?this.pad.t+t*ph:this.h-this.pad.b-t*ph}
+ iX(px){return this.xmin+(px-this.pad.l)/(this.w-this.pad.l-this.pad.r)*(this.xmax-this.xmin)}
+ iY(py){const ph=this.h-this.pad.t-this.pad.b,t=this.inv?(py-this.pad.t)/ph:(this.h-this.pad.b-py)/ph;return this.ymin+t*(this.ymax-this.ymin)}}
+const sceneC=$('#scene'),chartC=$('#chart'),SC=new Chart(sceneC),CH=new Chart(chartC);
+
+function axes(ctx,ch,{xt,yt,xfmt=v=>v,yfmt=v=>v,xlabel='',ylabel=''}){const L=ch.pad.l,R=ch.w-ch.pad.r,T=ch.pad.t,B=ch.h-ch.pad.b;
+ ctx.fillStyle='#fffaf0';ctx.fillRect(L,T,R-L,B-T);
+ ctx.save();ctx.strokeStyle='rgba(122,92,69,.16)';ctx.lineWidth=1;ctx.setLineDash([3,5]);
+ for(const v of xt){const x=ch.X(v);ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,B);ctx.stroke()}
+ for(const v of yt){const y=ch.Y(v);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke()}ctx.restore();
+ ctx.save();ctx.strokeStyle=INK;ctx.lineWidth=1.6;ctx.fillStyle=INK;ctx.font=`13px ${FONT}`;
+ sketchLine(ctx,L,B,R,B);sketchLine(ctx,L,T,L,B);
+ ctx.textAlign='center';ctx.textBaseline='top';for(const v of xt)ctx.fillText(xfmt(v),ch.X(v),B+6);
+ ctx.textAlign='right';ctx.textBaseline='middle';for(const v of yt)ctx.fillText(yfmt(v),L-6,ch.Y(v));
+ if(xlabel){ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(xlabel,(L+R)/2,ch.h-2)}
+ if(ylabel){ctx.translate(13,(T+B)/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ylabel,0,0)}ctx.restore()}
+function ctitle(ctx,ch,t){ctx.save();ctx.fillStyle=INK;ctx.font=`bold 15px ${FONT}`;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(t,ch.pad.l,ch.pad.t-9);ctx.restore()}
+function legend(ctx,ch,items){ctx.save();ctx.font=`13px ${FONT}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';let x=ch.w-ch.pad.r;for(const[t,c]of items.reverse()){ctx.fillStyle=c;ctx.fillText(t,x,ch.pad.t-9);x-=ctx.measureText(t).width+16}ctx.restore()}
+function clipPlot(ctx,ch){ctx.beginPath();ctx.rect(ch.pad.l,ch.pad.t,ch.w-ch.pad.l-ch.pad.r,ch.h-ch.pad.t-ch.pad.b);ctx.clip()}
+const XLAB='距中洋脊的水平距離（公里）　西 ◀　▶ 東';
+
+function cloud(ctx,x,y){ctx.save();ctx.fillStyle='rgba(255,255,255,.85)';ctx.strokeStyle='rgba(74,53,38,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(x,y,8,Math.PI*.5,Math.PI*1.5);ctx.arc(x+11,y-5,10,Math.PI,Math.PI*2);ctx.arc(x+24,y,8,Math.PI*1.5,Math.PI*.5);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+function drawSkySea(ctx,w,h,sea,t){let g=ctx.createLinearGradient(0,0,0,sea);g.addColorStop(0,'#fde2bd');g.addColorStop(1,'#fbf1dc');ctx.fillStyle=g;ctx.fillRect(0,0,w,sea);
+ dot(ctx,w-44,Math.min(24,sea*.45),Math.min(12,sea*.28),'#f6c66b','#d08f2c');
+ cloud(ctx,(w*.25+t*6)%(w+120)-60,sea*.4);cloud(ctx,(w*.62+t*4)%(w+120)-60,sea*.3);
+ g=ctx.createLinearGradient(0,sea,0,h);g.addColorStop(0,'#a7cfc9');g.addColorStop(1,'#3d6670');ctx.fillStyle=g;ctx.fillRect(0,sea,w,h-sea);
+ ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.6;ctx.beginPath();for(let x=0;x<=w;x+=5){const y=sea+Math.sin(x*.06+t*1.6)*1.5;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+function rockPattern(ctx){if(ctx._rp)return ctx._rp;const c=document.createElement('canvas');c.width=c.height=14;const g=c.getContext('2d');g.fillStyle='#d6b388';g.fillRect(0,0,14,14);
+ g.strokeStyle='rgba(90,60,40,.25)';g.beginPath();g.moveTo(0,14);g.lineTo(14,0);g.stroke();g.fillStyle='rgba(90,60,40,.25)';g.fillRect(3,4,1.5,1.5);g.fillRect(9,10,1.5,1.5);return ctx._rp=ctx.createPattern(c,'repeat')}
+function drawOcean(ctx,t,{reveal=null}={}){const ch=SC,w=ch.w,h=ch.h,sea=ch.Y(0),x0=ch.pad.l,x1=w-ch.pad.r;drawSkySea(ctx,w,h,sea,t);
+ const pat=rockPattern(ctx);let seg=[];
+ const flush=()=>{if(seg.length>1){ctx.beginPath();ctx.moveTo(seg[0][0],h);for(const p of seg)ctx.lineTo(p[0],p[1]);ctx.lineTo(seg[seg.length-1][0],h);ctx.closePath();ctx.fillStyle=pat;ctx.fill();pencil(ctx,seg,{width:2.2})}seg=[]};
+ for(let px=x0;px<=x1+.5;px+=2){const x=ch.iX(px);if(!reveal||reveal(x))seg.push([px,ch.Y(W.depth(x))]);else{flush();if(Math.round(px)%70===0){ctx.fillStyle='rgba(255,255,255,.4)';ctx.font=`20px ${FONT}`;ctx.textAlign='center';ctx.fillText('？',px,h-30)}}}
+ flush();
+ ctx.fillStyle='#fdf6e6';ctx.fillRect(0,0,x0,h);ctx.fillRect(x1,0,w-x1,h);
+ ctx.save();ctx.fillStyle=INK;ctx.strokeStyle=INK;ctx.font=`12px ${FONT}`;ctx.textAlign='right';ctx.textBaseline='middle';
+ for(const d of niceTicks(ch.ymin,ch.ymax,4)){const y=ch.Y(d);ctx.fillText(d,x0-6,y);sketchLine(ctx,x0-4,y,x0,y,{w:.3,p:1})}
+ ctx.translate(13,(sea+h)/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText('深度（公里）',0,0);ctx.restore();
+ ctx.fillStyle=INK;ctx.font=`14px ${FONT}`;ctx.textBaseline='alphabetic';
+ const full=ch.xmax-ch.xmin>1000;ctx.textAlign='left';ctx.fillText(full?'◀ 北美洲':'◀ 西',x0+4,18);ctx.textAlign='right';ctx.fillText(full?'非洲 ▶':'東 ▶',x1-4,18)}
+function drawShip(ctx,px,py,t,derrick=false){const b=Math.sin(t*2.2)*1.4;ctx.save();ctx.translate(px,py+b);ctx.strokeStyle=INK;ctx.lineWidth=1.8;ctx.lineJoin='round';
+ if(derrick){ctx.beginPath();ctx.moveTo(-6,-8);ctx.lineTo(0,-46);ctx.lineTo(6,-8);ctx.moveTo(-4,-20);ctx.lineTo(4,-20);ctx.moveTo(-2,-33);ctx.lineTo(2,-33);ctx.stroke()}
+ ctx.fillStyle='#fbf4e4';ctx.beginPath();ctx.rect(-18,-20,15,12);ctx.fill();ctx.stroke();ctx.fillStyle='#7fb3b5';ctx.fillRect(-15,-17,4,4);ctx.fillRect(-9,-17,4,4);
+ if(!derrick){ctx.beginPath();ctx.moveTo(10,-8);ctx.lineTo(10,-32);ctx.stroke();ctx.fillStyle='#f0b54f';ctx.beginPath();ctx.moveTo(10,-32);ctx.lineTo(22,-28);ctx.lineTo(10,-24);ctx.closePath();ctx.fill();ctx.stroke()}
+ ctx.fillStyle='#c8643b';ctx.beginPath();ctx.moveTo(-28,-8);ctx.lineTo(28,-8);ctx.lineTo(19,5);ctx.lineTo(-21,5);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+
+/* ================= 主迴圈與互動 ================= */
+let view={},lastT=0,stripeOn=false,stripeCache=null;
+const ship={x:-1900,target:-1900,speed:1200};
+function shipUpdate(dt,cb){const p=ship.x,d=ship.target-ship.x,st=ship.speed*dt;ship.x=Math.abs(d)<=st?ship.target:ship.x+Math.sign(d)*st;if(cb&&p!==ship.x)cb(p,ship.x)}
+function paint(c,fn,t){const w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;if(c.width!==Math.round(w*DPR)||c.height!==Math.round(h*DPR)){c.width=Math.round(w*DPR);c.height=Math.round(h*DPR);stripeCache=null}
+ const ctx=c.getContext('2d');ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,w,h);if(fn){ctx.save();ctx.font=`14px ${FONT}`;fn(ctx,t);ctx.restore()}}
+function frame(ts){const t=ts/1000,dt=Math.min(.05,t-(lastT||t));lastT=t;if(view.update)view.update(dt,t);
+ const lay=document.body.dataset.layout;if(lay!=='html'){paint(sceneC,view.scene,t);if(lay==='dual')paint(chartC,view.chart,t)}requestAnimationFrame(frame)}
+function bindP(c,name){const f=ty=>e=>{const r=c.getBoundingClientRect();if(ty==='down'){try{c.setPointerCapture(e.pointerId)}catch(_){}}if(view[name])view[name](ty,e.clientX-r.left,e.clientY-r.top)};
+ c.addEventListener('pointerdown',f('down'));c.addEventListener('pointermove',f('move'));c.addEventListener('pointerup',f('up'));c.addEventListener('pointercancel',f('up'))}
+bindP(sceneC,'sp');bindP(chartC,'cp');
+function layout(m){document.body.dataset.layout=m}
+
+/* ================= 引導面板元件 ================= */
+const G=$('#guideBody');
+function guide(title){$('#guideTitle').textContent=title;G.innerHTML=''}
+function add(html){const d=el('div','gblock',html);G.appendChild(d);const g=$('#guide');setTimeout(()=>g.scrollTop=g.scrollHeight,30);return d}
+function seq(fns){let i=0;const nx=()=>{if(i<fns.length)fns[i++](nx)};nx()}
+function btn(label,fn,cls='btn'){const b=el('button',cls,label);b.onclick=fn;return b}
+function span(h){return el('span','stat',h)}
+function controls(items){const c=$('#controls');c.innerHTML='';items.forEach(i=>c.appendChild(i))}
+function nextBtn(label='下一步 →'){const d=add('');d.appendChild(btn(label,()=>go(S.step+1),'btn big'))}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2400)}
+function mcq(q,opts,{multi=false,onDone}={}){const d=add(`<div class="q"><div class="qt">❓ ${q}</div><div class="opts"></div><div class="fb"></div></div>`);
+ const qb=d.querySelector('.q'),box=d.querySelector('.opts'),fb=d.querySelector('.fb');
+ if(!multi){opts.forEach(o=>{const b=el('button','opt',o.t);b.onclick=()=>{if(d.dataset.done)return;box.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');
+   fb.className='fb '+(o.ok?'good':'hmm');fb.innerHTML=o.fb||(o.ok?'✅ 沒錯！':'🤔 再想想看。');if(o.ok){d.dataset.done=1;box.querySelectorAll('.opt').forEach(x=>x.disabled=true);onDone&&onDone(o)}};box.appendChild(b)})}
+ else{opts.forEach(o=>{const b=el('button','opt','☐ '+o.t);b.onclick=()=>{if(d.dataset.done)return;b.classList.toggle('sel');b.innerHTML=(b.classList.contains('sel')?'☑ ':'☐ ')+o.t};box.appendChild(b)});
+  const cb=btn('確認',()=>{if(d.dataset.done)return;let miss=0,wrong=0;[...box.children].forEach((b,i)=>{const s=b.classList.contains('sel');if(opts[i].ok&&!s)miss++;if(!opts[i].ok&&s)wrong++});
+   if(!miss&&!wrong){d.dataset.done=1;fb.className='fb good';fb.innerHTML='✅ 觀察得很仔細！';[...box.children].forEach(b=>b.disabled=true);cb.disabled=true;onDone&&onDone()}
+   else{fb.className='fb hmm';fb.innerHTML=`🤔 ${wrong?`有 ${wrong} 項可能不對；`:''}${miss?`還漏了 ${miss} 項。`:''}再仔細看看圖！`}},'btn sm');cb.style.marginTop='6px';qb.insertBefore(cb,fb)}
+ return d}
+function calc(q,{ans,tol=.01,unit='',hint='',traps=[],good='答對了！',onDone}){const d=add(`<div class="q"><div class="qt">🧮 ${q}</div><div class="row"><input type="number" step="any" class="inp num"><span>${unit}</span></div><div class="row" style="margin-top:6px"></div><div class="fb"></div></div>`);
+ const inp=d.querySelector('input'),fb=d.querySelector('.fb'),r=d.querySelectorAll('.row')[1];
+ r.appendChild(btn('確認',()=>{if(d.dataset.done)return;const v=parseFloat(inp.value);if(isNaN(v)){fb.className='fb hmm';fb.textContent='請輸入數字';return}
+  if(Math.abs(v-ans)<=tol){d.dataset.done=1;inp.disabled=true;fb.className='fb good';fb.innerHTML='✅ '+good;onDone&&onDone(v)}
+  else{const tp=traps.find(x=>Math.abs(v-x.v)<=Math.max(tol,Math.abs(x.v)*.02));fb.className='fb hmm';fb.innerHTML=tp?tp.fb:'🤔 再算一次看看'+(v>ans?'（太大了）':'（太小了）')}},'btn sm'));
+ if(hint)r.appendChild(btn('💡 提示',()=>{if(!d.dataset.done){fb.className='fb';fb.innerHTML='💡 '+hint}},'btn sm alt'))}
+function openQ(q,{label,ph='',onDone}){const d=add(`<div class="q"><div class="qt">✏️ ${q}</div><textarea class="inp" rows="3" placeholder="${esc(ph)}"></textarea><div class="fb"></div></div>`);
+ const ta=d.querySelector('textarea'),fb=d.querySelector('.fb');const b=btn('📓 記進筆記本',()=>{if(d.dataset.done)return;const v=ta.value.trim();if(v.length<4){fb.className='fb hmm';fb.textContent='多寫一點點吧（至少一句話）！';return}
+  d.dataset.done=1;ta.disabled=true;b.disabled=true;logNote(label,v);fb.className='fb good';fb.textContent='已記進筆記本 ✏️';onDone&&onDone(v)},'btn sm');d.querySelector('.q').insertBefore(b,fb)}
+function poe(what,n){mcq(`先誠實比較：你對「${what}」的預測和實測結果……`,[{t:'很接近',ok:1,fb:'👍 厲害！你當初是根據什麼猜的？'},{t:'部分相符',ok:1,fb:'👍 很好：找出「哪裡不符」，常常就是新發現的起點。'},{t:'差很多',ok:1,fb:'🌟 太棒了！預測錯誤正是科學最有趣的時刻，代表世界跟我們想的不一樣！'}],{onDone:o=>{logNote(`${what}：預測 vs 實測`,o.t);n()}})}
+
+/* ================= 筆記本 ================= */
+let nbTab='clues';
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{nbTab=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));renderNotebook()});
+function renderNotebook(){let h='';
+ if(nbTab==='clues')h=S.clues.length?S.clues.map((id,i)=>`<div class="clue"><span class="ci">${CLUES[id].icon}</span><div><div class="csrc">線索 ${i+1}．${CLUES[id].src}</div>${clueText(id)}</div></div>`).join(''):'<p class="muted">還沒有線索，出發去探測吧！</p>';
+ else if(nbTab==='notes')h=S.log.length?S.log.map(n=>`<div class="note"><b>${esc(n.label)}</b><br>${esc(n.text)}</div>`).join(''):'<p class="muted">你的預測與想法會記在這裡。</p>';
+ else h=['A','B','C'].map(k=>{const s=S.hyp[k],c=s==='淘汰'?'out':s==='存活'?'ok':'u';return `<div class="hyp ${c}"><span class="badge">${s}</span><b>${HYP[k].name}</b><div class="hd">${HYP[k].d}</div></div>`}).join('');
+ $('#nbBody').innerHTML=h}
+function addClue(id,txt){if(txt)S.clueText[id]=txt;if(!S.clues.includes(id)){S.clues.push(id);toast('📌 新線索已收進筆記本！')}renderNotebook();save()}
+function logNote(label,text){S.log.push({label,text});renderNotebook();save()}
+
+/* ================= 共用圖表 ================= */
+function rangeOcean(zoom){const r=zoom?150:2000;SC.set({xmin:-r,xmax:r,ymin:0,ymax:zoom?4.6:7.5,inv:true,pad:{t:62,b:10}});CH.set({xmin:-r,xmax:r,ymin:zoom?1.6:0,ymax:zoom?4.2:7,inv:true,pad:{t:30}})}
+function chartDepth(ctx,revealed){const ch=CH;axes(ctx,ch,{xt:niceTicks(ch.xmin,ch.xmax,8),yt:niceTicks(ch.ymin,ch.ymax,5),xfmt:v=>Math.abs(v),xlabel:XLAB,ylabel:'水深（公里）'});
+ const pw=ch.w-ch.pad.l-ch.pad.r,ph=ch.h-ch.pad.t-ch.pad.b,ve=((ch.xmax-ch.xmin)/pw)/((ch.ymax-ch.ymin)/ph);
+ ctitle(ctx,ch,`📈 聲納測深剖面（垂直方向放大約 ${Math.round(ve/5)*5} 倍）`);
+ ctx.save();clipPlot(ctx,ch);let seg=[];const fl=()=>{pencil(ctx,seg,{color:'#3f6f78',width:2.2});seg=[]};
+ for(let px=ch.pad.l;px<=ch.w-ch.pad.r;px++){const x=ch.iX(px);if(revealed(x))seg.push([px,ch.Y(W.depth(x))]);else fl()}fl();
+ ctx.setLineDash([4,4]);ctx.strokeStyle=INK;ctx.globalAlpha=.4;const sx=ch.X(ship.x);ctx.beginPath();ctx.moveTo(sx,ch.pad.t);ctx.lineTo(sx,ch.h-ch.pad.b);ctx.stroke();ctx.restore()}
+function curve(ctx,f,from,to,{color=INK,width=2,fill=false}={}){const ch=CH,pts=[];for(let px=ch.X(from);px<=ch.X(to);px+=1)pts.push([px,ch.Y(f(ch.iX(px)))]);if(pts.length<2)return;
+ if(fill){const z=ch.Y(0);for(const[y0,hh,col]of[[0,z,'rgba(91,67,50,.38)'],[z,ch.h-z,'rgba(127,179,181,.35)']]){ctx.save();ctx.beginPath();ctx.rect(0,y0,ch.w,hh);ctx.clip();ctx.beginPath();ctx.moveTo(pts[0][0],z);pts.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.lineTo(pts[pts.length-1][0],z);ctx.closePath();ctx.fillStyle=col;ctx.fill();ctx.restore()}}
+ pencil(ctx,pts,{color,width})}
+function chartMag(ctx,{main=null,upto=80,faint=null,model=null,title='🧲 磁力儀紀錄'}={}){const ch=CH;
+ axes(ctx,ch,{xt:niceTicks(ch.xmin,ch.xmax,8),yt:niceTicks(ch.ymin,ch.ymax,6),xfmt:v=>Math.abs(v),xlabel:'距中洋脊（公里）　西 ◀　▶ 東',ylabel:'磁異常（nT）'});ctitle(ctx,ch,title);
+ ctx.save();clipPlot(ctx,ch);ctx.strokeStyle=INK;ctx.lineWidth=1;const z=ch.Y(0);sketchLine(ctx,ch.pad.l,z,ch.w-ch.pad.r,z,{w:.4,p:1});
+ if(faint)curve(ctx,faint,-80,80,{color:'rgba(74,53,38,.35)',width:1.5});
+ if(main)curve(ctx,main,-80,upto,{color:INK,width:2,fill:true});
+ if(model)curve(ctx,model.f,model.from??-80,model.to??80,{color:'#c8643b',width:2.4});
+ ctx.restore();ctx.save();ctx.font=`12px ${FONT}`;ctx.fillStyle=INK;ctx.textAlign='left';ctx.fillText('↑ 正異常（比平均強）',ch.pad.l+4,ch.pad.t+14);ctx.fillText('↓ 負異常（比平均弱）',ch.pad.l+4,ch.h-ch.pad.b-6);ctx.restore()}
+
+/* ================= 章節步驟 ================= */
+const CHAPTERS=['任務簡報','聲納測深','沉積與熱流','磁力之謎','假說法庭','鑽探驗證','消失的海底','調查報告'];
+
+function measureStep(cfg){return{ch:2,title:cfg.title,enter(){
+ layout('dual');rangeOcean(false);CH.set({xmin:-2000,xmax:2000,ymin:0,ymax:cfg.ymax,inv:false,pad:{t:30}});
+ S[cfg.key]=[];S[cfg.pred]=[];let phase='draw',probe=null,finished=false,drag=false,drawing=false;
+ ship.x=ship.target=-1500;ship.speed=1100;
+ view.cp=(ty,px,py)=>{if(phase!=='draw')return;const p=[clamp(CH.iX(px),-2000,2000),clamp(CH.iY(py),0,cfg.ymax)];
+  if(ty==='down'){drawing=true;S[cfg.pred]=[p]}else if(ty==='move'&&drawing)S[cfg.pred].push(p);else if(ty==='up')drawing=false};
+ view.sp=(ty,px)=>{if(phase==='draw')return;if(ty==='up'){drag=false;return}if(ty==='down')drag=true;if(drag)ship.target=clamp(SC.iX(px),-1950,1950)};
+ view.update=(dt,t)=>{shipUpdate(dt);if(probe&&t-probe.t0>.9){S[cfg.key].push({x:probe.x,v:cfg.measure(probe.x)});probe=null;status();save()}};
+ view.scene=(ctx,t)=>{drawOcean(ctx,t);cfg.marker(ctx,S[cfg.key]);if(probe){const px=SC.X(probe.x),sy=SC.Y(0),fy=SC.Y(W.depth(probe.x)),k=clamp((t-probe.t0)/.8,0,1);
+  ctx.save();ctx.strokeStyle=INK;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(px,sy);ctx.lineTo(px,lerp(sy,fy,k));ctx.stroke();ctx.restore();dot(ctx,px,lerp(sy,fy,k),4,cfg.color)}
+  drawShip(ctx,SC.X(ship.x),SC.Y(0),t);if(phase==='draw'){ctx.fillStyle='rgba(253,246,230,.8)';ctx.fillRect(SC.pad.l,SC.h/2-22,SC.w-SC.pad.l-SC.pad.r,44);ctx.fillStyle=INK;ctx.font=`18px ${FONT}`;ctx.textAlign='center';ctx.fillText('✍️ 先在下方圖表畫出你的預測，才能開始測量',SC.w/2,SC.h/2+6)}};
+ view.chart=ctx=>{const ch=CH;axes(ctx,ch,{xt:niceTicks(-2000,2000,8),yt:niceTicks(0,cfg.ymax,5),xfmt:v=>Math.abs(v),xlabel:XLAB,ylabel:cfg.ylabel});ctitle(ctx,ch,cfg.ctitle);
+  ctx.save();clipPlot(ctx,ch);const pr=S[cfg.pred];if(pr.length>1){ctx.setLineDash([7,5]);pencil(ctx,pr.map(p=>[ch.X(p[0]),ch.Y(p[1])]),{color:'#c8643b',width:2.4})}
+  for(const p of S[cfg.key])dot(ctx,ch.X(p.x),ch.Y(p.v),5,cfg.color);ctx.restore();legend(ctx,ch,[['- - 你的預測','#c8643b'],['● 實測',cfg.color]])};
+ const st=span('');
+ function status(){const d=S[cfg.key],c={n:d.length,w:d.filter(p=>p.x<-200).length,e:d.filter(p=>p.x>200).length,c:d.filter(p=>Math.abs(p.x)<=200).length};
+  st.innerHTML=`已測 ${c.n} 點（西 ${c.w}．中央 ${c.c}．東 ${c.e}）`;if(!finished&&cfg.cond(c)){finished=true;phase='done';cfg.after()}}
+ const measureB=btn('📍 在這裡測量',()=>{if(probe)return;if(Math.abs(ship.target-ship.x)>1){toast('船還在移動中……');return}
+  const x=ship.x;if(Math.abs(x)>W.EDGE){toast('這裡太靠近大陸，陸地沖刷來的泥沙會干擾，請在大洋範圍內測量');return}
+  if(S[cfg.key].some(p=>Math.abs(p.x-x)<25)){toast('這附近已經測過了，換個地方吧！');return}probe={x,t0:performance.now()/1000}});
+ controls([btn('🧽 擦掉重畫',()=>{S[cfg.pred]=[]},'btn alt'),btn('✅ 我畫好了，開始測量',()=>{const p=S[cfg.pred];if(p.length<5){toast('請先在下方圖表畫一條線');return}
+  const xs=p.map(q=>q[0]);if(Math.max(...xs)-Math.min(...xs)<2400){toast('請從西到東畫長一點，涵蓋大部分的範圍');return}
+  phase='measure';logNote(`預測：${cfg.what}`,'已在圖上畫出預測曲線（橘色虛線）');controls([measureB,st]);status();
+  add(`<div class="task">🚢 <b>開始測量</b>：點擊或拖曳上方畫面移動船隻，再按「📍 在這裡測量」。<br>要求：${cfg.minTxt}</div>`)})]);
+ guide(cfg.title);add(cfg.intro);add(`<div class="task">✍️ <b>先預測</b>：在<b>下方圖表</b>上，用手指或滑鼠從西到東畫出你預測的${cfg.what}分布。</div>`)}}}
+
+function sedMarker(ctx,pts){for(const p of pts){const px=SC.X(p.x),fy=SC.Y(W.depth(p.x)),sy=Math.max(2,SC.Y(W.depth(p.x)+p.v/1000)-fy);
+ ctx.fillStyle='#f3dca8';ctx.fillRect(px-4,fy,8,sy);ctx.fillStyle='#5b4332';ctx.fillRect(px-4,fy+sy,8,10);ctx.strokeStyle=INK;ctx.lineWidth=1.2;ctx.strokeRect(px-4,fy,8,sy+10)}}
+function heatMarker(ctx,pts){for(const p of pts){const px=SC.X(p.x),fy=SC.Y(W.depth(p.x));ctx.strokeStyle=INK;ctx.beginPath();ctx.moveTo(px,fy);ctx.lineTo(px,fy-14);ctx.stroke();dot(ctx,px,fy-16,3+p.v/70,'rgba(232,110,60,.85)')}}
+
+function mapSVG(){return `<svg viewBox="0 0 400 170" class="tgmap"><rect width="400" height="170" fill="#cfe3de" rx="10"/>
+<path d="M0 0 H95 C85 30 110 50 90 75 C70 95 95 120 70 140 C60 155 40 170 0 170Z" fill="#e8cf9c" stroke="#4a3526" stroke-width="2"/>
+<path d="M400 0 H300 C315 25 290 45 305 70 C320 90 280 110 300 130 C310 150 330 170 400 170Z" fill="#e8cf9c" stroke="#4a3526" stroke-width="2"/>
+<path d="M95 85 C160 70 240 100 300 85" fill="none" stroke="#c8643b" stroke-width="2.5" stroke-dasharray="7 6"/>
+<text x="18" y="40" font-size="16" fill="#4a3526">北美洲</text><text x="332" y="40" font-size="16" fill="#4a3526">非洲</text>
+<text x="160" y="150" font-size="15" fill="#3f6f78">北大西洋</text><text x="190" y="72" font-size="26" fill="#4a3526">？</text><text x="100" y="78" font-size="18">🚢</text></svg>`}
+function timelineSVG(){const Wd=600,T=6.7,rx=t=>30+t/T*(Wd-50);let r=`<rect x="30" y="12" width="${Wd-50}" height="30" fill="#f7ead0" stroke="#4a3526" stroke-width="2"/>`;
+ for(const[a,b]of NORMAL){if(a>=T)continue;r+=`<rect x="${rx(a)}" y="12" width="${rx(Math.min(b,T))-rx(a)}" height="30" fill="#5b4332"/>`}
+ for(let t=0;t<=6;t++)r+=`<text x="${rx(t)}" y="60" font-size="13" text-anchor="middle" fill="#4a3526">${t}</text>`;
+ r+=`<text x="${Wd-18}" y="60" font-size="12" text-anchor="end" fill="#4a3526">百萬年前</text>`;return `<svg viewBox="0 0 ${Wd} 70" class="tl">${r}</svg>`}
+
+function buildStripes(){const ch=SC,w=Math.ceil(ch.w),h=Math.ceil(ch.h),cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');
+ const done=[...S.tracks].sort((a,b)=>a-b);if(!done.length)return cv;const lo=done[0],hi=done[done.length-1];c.fillStyle='rgba(91,67,50,.8)';
+ const offAt=yi=>{const i=clamp(Math.floor(yi),0,4);return lerp(TRACK_OFF[i],TRACK_OFF[i+1],clamp(yi-i,0,1))};
+ for(let py=ch.Y(lo);py<ch.Y(hi+1);py+=2){const yi=ch.iY(py)-.5;let a=lo,b=hi;for(const d of done)if(d<=yi)a=d;for(const d of [...done].reverse())if(d>=yi)b=d;
+  if(yi<lo)a=b=lo;if(yi>hi)a=b=hi;const f=a===b?0:(yi-a)/(b-a),oy=offAt(yi);
+  for(let px=ch.pad.l;px<w-ch.pad.r;px+=2){const x=ch.iX(px),v=lerp(magAt(TR[a],x-oy+TRACK_OFF[a]),magAt(TR[b],x-oy+TRACK_OFF[b]),f);if(v>0)c.fillRect(px,py,2,2)}}return cv}
+function drawMap(ctx,t,cur){const ch=SC,w=ch.w,h=ch.h,L=ch.pad.l,R=w-ch.pad.r,T=ch.pad.t,B=h-ch.pad.b;ctx.fillStyle='#fdf6e6';ctx.fillRect(0,0,w,h);ctx.fillStyle='#cfe3de';ctx.fillRect(L,T,R-L,B-T);
+ ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;for(let i=0;i<14;i++){const x=L+rnd(i)*(R-L-30),y=T+rnd(i+50)*(B-T);ctx.beginPath();ctx.arc(x,y,6,Math.PI*1.1,Math.PI*1.9);ctx.stroke()}
+ if(stripeOn){if(!stripeCache)stripeCache=buildStripes();ctx.drawImage(stripeCache,0,0,w,h)}
+ ctx.save();ctx.strokeStyle='#c8643b';ctx.lineWidth=2.5;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(ch.X(TRACK_OFF[0]),T);for(let i=0;i<6;i++)ctx.lineTo(ch.X(TRACK_OFF[i]),ch.Y(i+.5));ctx.lineTo(ch.X(TRACK_OFF[5]),B);ctx.stroke();ctx.restore();
+ ctx.fillStyle='#c8643b';ctx.font=`13px ${FONT}`;ctx.textAlign='left';ctx.fillText('中洋脊軸（聲納確認）',ch.X(TRACK_OFF[0])+6,T+14);
+ const sc=(ch.Y(1)-ch.Y(0))*.42/400;
+ for(let i=0;i<6;i++){const y=ch.Y(i+.5);ctx.save();ctx.strokeStyle='rgba(74,53,38,.3)';ctx.setLineDash([2,4]);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke();ctx.restore();
+  ctx.fillStyle=INK;ctx.textAlign='right';ctx.font=`13px ${FONT}`;ctx.fillText(`航線${i+1}`,L-5,y+4);
+  const done=S.tracks.includes(i),isC=cur&&cur.i===i;if(done||isC){const up=isC?ship.x:80,pts=[];for(let px=L;px<=ch.X(up);px+=1.5)pts.push([px,y-magAt(TR[i],ch.iX(px))*sc]);pencil(ctx,pts,{color:stripeOn?'#fff':'#3a2a1e',width:1.6})}}
+ if(cur){const px=ch.X(ship.x),py=ch.Y(cur.i+.5);ctx.save();ctx.translate(px,py);ctx.fillStyle='#c8643b';ctx.strokeStyle=INK;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(-10,-6);ctx.lineTo(-10,6);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+ ctx.strokeStyle=INK;ctx.lineWidth=1.6;sketchRect(ctx,L,T,R-L,B-T);ctx.fillStyle=INK;ctx.textAlign='center';ctx.font=`12px ${FONT}`;for(const v of niceTicks(-80,80,8))ctx.fillText(Math.abs(v),ch.X(v),B+15);
+ ctx.fillText('距中洋脊（公里）　西 ◀　▶ 東',(L+R)/2,h-4);ctx.font=`bold 15px ${FONT}`;ctx.textAlign='left';ctx.fillText('🗺 俯視圖：從正上方看海面下的磁異常',L,T-10);ctx.textAlign='right';ctx.fillText('北 ↑',R,T-10)}
+function chartBars(ctx){const ch=CH,w=ch.w,h=ch.h,L=ch.pad.l,R=w-ch.pad.r,PW=R-L;ctx.fillStyle='#fffaf0';ctx.fillRect(L,22,PW,h-26);ctitle(ctx,ch,'🔍 三條「條碼」大比對（深色＝正向磁化）');
+ const rows=[['東側海底（航線 3）：從中洋脊往東 0 → 80 公里',f=>magAt(TR[2],f*80)>0,'0 公里','80 公里'],['西側海底（航線 3）：從中洋脊往西 0 → 80 公里',f=>magAt(TR[2],-f*80)>0,'0 公里','80 公里'],['陸地熔岩的地磁倒轉年表：現在 → 667 萬年前',f=>pol(f*80/12)>0,'現在','667 萬年前']];
+ const rh=(h-70)/3;rows.forEach((r,i)=>{const y=44+i*rh,bh=rh-30;ctx.fillStyle=INK;ctx.font=`14px ${FONT}`;ctx.textAlign='left';ctx.fillText(r[0],L+4,y-2);
+  ctx.fillStyle='#5b4332';for(let px=0;px<PW;px++)if(r[1](px/PW))ctx.fillRect(L+px,y+4,1.2,bh);ctx.strokeStyle=INK;ctx.lineWidth=1.5;sketchRect(ctx,L,y+4,PW,bh);
+  ctx.fillStyle=INK;ctx.font=`12px ${FONT}`;ctx.fillText(r[2],L,y+bh+17);ctx.textAlign='right';ctx.fillText(r[3],R,y+bh+17)})}
+
+function drawConveyor(ctx,t,tau,v=12){const ch=SC,w=ch.w,h=ch.h,L=ch.pad.l,R=w-ch.pad.r,sea=40,ry=sea+60,cH=34,T0=6.7;drawSkySea(ctx,w,h,sea,t);
+ const fy=x=>ry+60*Math.sqrt(Math.min(Math.abs(x),80)/80),fw=(T0-tau)*v;
+ const g=ctx.createLinearGradient(0,ry,0,h);g.addColorStop(0,'#f2b36d');g.addColorStop(1,'#c8643b');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(L,h);for(let px=L;px<=R;px+=4)ctx.lineTo(px,fy(ch.iX(px))+cH);ctx.lineTo(R,h);ctx.closePath();ctx.fill();
+ for(let px=L;px<R;px+=2){const x=ch.iX(px),ax=Math.abs(x),y=fy(x);ctx.fillStyle=ax<=fw?(pol(tau+ax/v)>0?'#5b4332':'#f1dfbd'):'#b9aa95';ctx.fillRect(px,y,2.3,cH);
+  const sp=Math.min(12,ax/v*1.8);if(sp>.4){ctx.fillStyle='#e8c98f';ctx.fillRect(px,y-sp,2.3,sp)}}
+ const top=[],bot=[];for(let px=L;px<=R;px+=3){const y=fy(ch.iX(px));top.push([px,y]);bot.push([px,y+cH])}pencil(ctx,top,{width:1.5});pencil(ctx,bot,{width:1.5});
+ const cx=ch.X(0);ctx.save();ctx.globalAlpha=.8;const mg=ctx.createRadialGradient(cx,ry+cH+30,4,cx,ry+cH+30,60);mg.addColorStop(0,'#ff6a2b');mg.addColorStop(1,'rgba(255,106,43,0)');ctx.fillStyle=mg;ctx.fillRect(cx-60,ry,120,140);ctx.restore();
+ ctx.strokeStyle='#8a2f14';ctx.lineWidth=2;for(let k=0;k<3;k++){const ph=(t*.6+k/3)%1,y=h-10-ph*(h-ry-cH-20),x=cx+(k-1)*14;ctx.globalAlpha=1-ph*.6;ctx.beginPath();ctx.moveTo(x,y+10);ctx.lineTo(x,y);ctx.lineTo(x-4,y+5);ctx.moveTo(x,y);ctx.lineTo(x+4,y+5);ctx.stroke()}ctx.globalAlpha=1;
+ ctx.fillStyle=INK;ctx.strokeStyle=INK;ctx.lineWidth=2.2;ctx.font=`14px ${FONT}`;for(const s of[-1,1]){const x0=ch.X(s*45),x1=ch.X(s*70),y=fy(s*55)+cH/2;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.lineTo(x1-s*8,y-6);ctx.moveTo(x1,y);ctx.lineTo(x1-s*8,y+6);ctx.stroke()}
+ ctx.textAlign='center';ctx.fillStyle='#fffaf0';ctx.fillText('板塊被拉開',ch.X(-58),fy(58)+cH+18);ctx.fillText('板塊被拉開',ch.X(58),fy(58)+cH+18);ctx.fillText('地函物質上升填補',cx,h-8);
+ ctx.fillStyle=INK;ctx.fillText('中洋脊',cx,ry-24);
+ const cpx=L+36,cpy=sea+36,p=pol(tau);ctx.save();ctx.fillStyle='#fffaf0';ctx.strokeStyle=INK;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(cpx,cpy,20,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.translate(cpx,cpy);if(p<0)ctx.rotate(Math.PI);ctx.fillStyle='#c8643b';ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(5,0);ctx.lineTo(-5,0);ctx.closePath();ctx.fill();ctx.fillStyle='#7fb3b5';ctx.beginPath();ctx.moveTo(0,16);ctx.lineTo(5,0);ctx.lineTo(-5,0);ctx.closePath();ctx.fill();ctx.restore();
+ ctx.fillStyle=INK;ctx.textAlign='left';ctx.font=`13px ${FONT}`;ctx.fillText(`此刻地磁：${p>0?'正向':'反向'}`,cpx+26,cpy+4);
+ ctx.textAlign='right';ctx.font=`bold 16px ${FONT}`;ctx.fillText(`距今 ${tau.toFixed(2)} 百萬年`,R-4,sea+26);
+ ctx.font=`12px ${FONT}`;ctx.fillText('深色＝正向磁化　淺色＝反向磁化　灰＝模擬開始前的洋殼　（沉積物放大繪製）',R-4,sea+44)}
+function drawTrench(ctx,t,count,H,fitted){const ch=SC,w=ch.w,h=ch.h,L=ch.pad.l,R=w-ch.pad.r,T=ch.pad.t,B=h-ch.pad.b;
+ let g=ctx.createLinearGradient(0,0,0,T-24);g.addColorStop(0,'#fde2bd');g.addColorStop(1,'#fbf1dc');ctx.fillStyle=g;ctx.fillRect(0,0,w,T-24);
+ ctx.fillStyle='#a7cfc9';ctx.fillRect(L,T-24,R-L,24);
+ g=ctx.createLinearGradient(0,T,0,B);g.addColorStop(0,'#f3dcae');g.addColorStop(1,'#e7a86b');ctx.fillStyle=g;ctx.fillRect(L,T,R-L,B-T);
+ ctx.fillStyle='#caa877';ctx.strokeStyle=INK;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(ch.X(150),T-24);ctx.quadraticCurveTo(ch.X(190),T-44,ch.X(220),T-40);ctx.quadraticCurveTo(ch.X(260),T-46,ch.X(300),T-24);ctx.closePath();ctx.fill();ctx.stroke();
+ const vx=ch.X(220);ctx.fillStyle='#9c6b4a';ctx.beginPath();ctx.moveTo(vx-14,T-38);ctx.lineTo(vx,T-60);ctx.lineTo(vx+14,T-38);ctx.closePath();ctx.fill();ctx.stroke();
+ for(let k=0;k<3;k++){const ph=(t*.4+k/3)%1;ctx.globalAlpha=1-ph;dot(ctx,vx+ph*12,T-64-ph*18,3+ph*5,'#ddd','rgba(0,0,0,.2)')}ctx.globalAlpha=1;
+ const tx=ch.X(0);ctx.fillStyle='#3d6670';ctx.beginPath();ctx.moveTo(tx-16,T);ctx.lineTo(tx,T+10);ctx.lineTo(tx+16,T);ctx.closePath();ctx.fill();
+ ctx.fillStyle=INK;ctx.font=`14px ${FONT}`;ctx.textAlign='center';ctx.fillText('海溝',tx,T-30);ctx.fillText('島弧火山',vx,Math.max(14,T-68));
+ ctx.font=`13px ${FONT}`;ctx.textAlign='left';ctx.fillText('◀ 菲律賓海板塊（大洋側）',L+4,T+18);ctx.textAlign='right';ctx.fillText('琉球島弧／歐亞板塊 ▶',R-4,T+18);
+ if(fitted){ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle='#5f7f96';ctx.lineWidth=(ch.Y(60)-ch.Y(0));ctx.lineCap='butt';ctx.beginPath();for(let x=0;x<=480;x+=10){const px=ch.X(x),py=ch.Y(slabZ(x)+25);x?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.stroke();ctx.restore();
+  ctx.fillStyle='#35546a';ctx.font=`15px ${FONT}`;ctx.textAlign='left';ctx.fillText('冰冷的老洋殼（隱沒板塊）',ch.X(250),ch.Y(slabZ(250)+75))}
+ const q=S.quakes,n=Math.floor(q.length*count/3);for(let i=0;i<n;i++){const p=q[i],k=clamp(p.z/320,0,1);dot(ctx,ch.X(p.x),ch.Y(p.z),3.2,`rgb(${Math.round(lerp(244,181,k))},${Math.round(lerp(201,65,k))},${Math.round(lerp(93,43,k))})`,'rgba(74,53,38,.6)')}
+ ctx.save();ctx.fillStyle=INK;ctx.strokeStyle=INK;ctx.lineWidth=1.6;sketchLine(ctx,L,B,R,B);sketchLine(ctx,L,T,L,B);ctx.font=`12px ${FONT}`;ctx.textAlign='center';for(const v of niceTicks(-100,500,6))ctx.fillText(v,ch.X(v),B+15);
+ ctx.fillText('距海溝的水平距離（公里）　大洋側 ◀　▶ 島弧側',(L+R)/2,h-4);ctx.textAlign='right';for(const v of niceTicks(0,350,7))ctx.fillText(v,L-6,ch.Y(v)+4);
+ ctx.translate(13,(T+B)/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText('震源深度（公里）',0,0);ctx.restore();
+ if(H){const[a,b]=H,dx=b.x-a.x,dz=b.z-a.z,k=1000;ctx.save();clipPlot(ctx,ch);ctx.strokeStyle='#2e5d6b';ctx.lineWidth=3;ctx.setLineDash([10,6]);ctx.beginPath();ctx.moveTo(ch.X(a.x-dx*k),ch.Y(a.z-dz*k));ctx.lineTo(ch.X(a.x+dx*k),ch.Y(a.z+dz*k));ctx.stroke();ctx.restore();
+  for(const p of H){dot(ctx,ch.X(p.x),ch.Y(p.z),12,'rgba(253,246,230,.85)','#2e5d6b');dot(ctx,ch.X(p.x),ch.Y(p.z),3,'#2e5d6b')}
+  ctx.save();ctx.font=`bold 16px ${FONT}`;ctx.fillStyle='#2e5d6b';ctx.textAlign='left';ctx.fillText(`傾角 ≈ ${Math.round(dipOf(H))}°`,clamp(ch.X((a.x+b.x)/2)+16,L+4,R-110),clamp(ch.Y((a.z+b.z)/2)-14,T+36,B-8));ctx.restore()}}
+function dipOf(H){return Math.atan(Math.abs(H[1].z-H[0].z)/Math.max(Math.abs(H[1].x-H[0].x),.001))*180/Math.PI}
+
+/* ================= 完整模型（中洋脊 → 海溝） ================= */
+function arcArrow(ctx,cx,cy,a,b,s,e){const ccw=e<s;ctx.beginPath();ctx.ellipse(cx,cy,a,b,0,s,e,ccw);ctx.stroke();
+ const px=cx+a*Math.cos(e),py=cy+b*Math.sin(e);let tx=-a*Math.sin(e),ty=b*Math.cos(e);if(ccw){tx=-tx;ty=-ty}const l=Math.hypot(tx,ty)||1,ux=tx/l,uy=ty/l;
+ ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-ux*11-uy*6,py-uy*11+ux*6);ctx.moveTo(px,py);ctx.lineTo(px-ux*11+uy*6,py-uy*11-ux*6);ctx.stroke()}
+function drawFullModel(ctx,t){const w=SC.w,h=SC.h,sea=Math.round(h*.16);drawSkySea(ctx,w,h,sea,t);
+ const rx=w*.26,L1=w*.44,top0=sea+26,dip=38*Math.PI/180,path=[];
+ let x=rx,y=top0,s=0;while(y<h+60&&x<w+60&&path.length<3000){const f=Math.max(s/L1,.004),a=s<L1?Math.atan(Math.min(16/(L1*Math.sqrt(f)),.35)):Math.min(dip,Math.atan(16/L1)+(s-L1)/110*dip);
+  path.push({x,y,a,s,th:8+30*Math.sqrt(Math.min(s/L1,1))});x+=Math.cos(a)*3;y+=Math.sin(a)*3;s+=3}
+ const trench=path.find(p=>p.s>=L1)||path[path.length-1],xT=trench.x;
+ const topAt=X=>{for(let i=1;i<path.length;i++)if(path[i].x>=X)return path[i].y;return h+60};
+ const bot=(p,m)=>[m?2*rx-p.x+Math.sin(p.a)*p.th:p.x-Math.sin(p.a)*p.th,p.y+Math.cos(p.a)*p.th];
+ const mg=ctx.createLinearGradient(0,top0,0,h);mg.addColorStop(0,'#f2b36d');mg.addColorStop(1,'#c8643b');ctx.fillStyle=mg;
+ ctx.beginPath();ctx.moveTo(-10,h+60);const left=path.filter(p=>p.s<=L1&&2*rx-p.x>-20).reverse();for(const p of left){const b=bot(p,1);ctx.lineTo(b[0],b[1])}for(const p of path){const b=bot(p,0);ctx.lineTo(b[0],b[1])}
+ const lp=path[path.length-1];ctx.lineTo(lp.x+60,h+60);ctx.closePath();ctx.fill();
+ const cb=X=>Math.min(sea+70,topAt(X));
+ ctx.beginPath();ctx.moveTo(xT,topAt(xT));for(let X=xT;X<=w+4;X+=4)ctx.lineTo(X,cb(X));for(let X=w+4;X>=xT;X-=4)ctx.lineTo(X,topAt(X));ctx.closePath();ctx.fill();
+ ctx.fillStyle='#caa877';ctx.strokeStyle=INK;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(xT+6,topAt(xT+6)-2);ctx.quadraticCurveTo(xT+30,sea+10,xT+60,sea-10);ctx.lineTo(w+4,sea-16);for(let X=w+4;X>=xT+6;X-=4)ctx.lineTo(X,cb(X));ctx.closePath();ctx.fill();ctx.stroke();
+ const vp=path.find(p=>p.y>=sea+(h-sea)*.42)||lp,vx=vp.x;
+ ctx.save();ctx.strokeStyle='#e0552a';ctx.lineWidth=3;ctx.setLineDash([3,6]);ctx.lineDashOffset=-t*20;ctx.beginPath();ctx.moveTo(vx,vp.y);ctx.lineTo(vx,sea-18);ctx.stroke();ctx.restore();
+ ctx.fillStyle='#9c6b4a';ctx.strokeStyle=INK;ctx.beginPath();ctx.moveTo(vx-18,sea-12);ctx.lineTo(vx,sea-40);ctx.lineTo(vx+18,sea-12);ctx.closePath();ctx.fill();ctx.stroke();
+ for(const m of[0,1])for(const p of path){if(m&&(p.s>L1||2*rx-p.x<-10))continue;const age=((p.s/40-t*.5)%6.7+6.7)%6.7;ctx.save();ctx.translate(m?2*rx-p.x:p.x,p.y);ctx.rotate(m?-p.a:p.a);ctx.fillStyle=pol(age)>0?'#5b4332':'#f1dfbd';ctx.fillRect(-1.9,0,3.9,p.th);ctx.restore()}
+ pencil(ctx,path.map(p=>[p.x,p.y]),{width:1.6});pencil(ctx,left.map(p=>[2*rx-p.x,p.y]),{width:1.6});
+ ctx.save();const rg=ctx.createRadialGradient(rx,top0+26,4,rx,top0+26,70);rg.addColorStop(0,'rgba(255,90,30,.9)');rg.addColorStop(1,'rgba(255,90,30,0)');ctx.fillStyle=rg;ctx.fillRect(rx-70,top0,140,110);ctx.restore();
+ const slab=path.filter(p=>p.s>L1-20);for(let i=0;i<16&&slab.length;i++){const p=slab[Math.floor(rnd(i+3)*slab.length)];if(Math.sin(t*2.5+i*2.3)>.4){ctx.fillStyle='#fff4a0';ctx.font=`16px ${FONT}`;ctx.textAlign='center';ctx.fillText('✦',p.x-Math.sin(p.a)*8,p.y+Math.cos(p.a)*8+5)}}
+ ctx.save();ctx.strokeStyle='rgba(120,40,15,.7)';ctx.lineWidth=2.4;const cx=rx+L1*.5,cy=top0+(h-top0)*.58,ea=L1*.36,eb=(h-top0)*.24;
+ arcArrow(ctx,cx,cy,ea,eb,Math.PI*1.15,Math.PI*1.85);arcArrow(ctx,cx,cy,ea,eb,Math.PI*.15,Math.PI*.85);
+ arcArrow(ctx,2*rx-cx,cy,ea,eb,Math.PI*1.85,Math.PI*1.15);arcArrow(ctx,2*rx-cx,cy,ea,eb,Math.PI*.85,Math.PI*.15);ctx.restore();
+ ctx.fillStyle=INK;ctx.font=`15px ${FONT}`;ctx.textAlign='center';ctx.fillText('中洋脊：新洋殼誕生',rx,sea-10);ctx.fillText('海溝：老洋殼隱沒',xT-30,sea+20);
+ ctx.fillText('板塊移動 →',rx+L1*.45,top0+4);ctx.fillText('← 板塊移動',rx-L1*.4,top0+4);ctx.fillText('島弧火山',vx,sea-46);ctx.fillText('大陸板塊',xT+(w-xT)*.62,sea+30);
+ const sp=path.find(p=>p.y>=sea+(h-sea)*.68);if(sp){ctx.textAlign='left';ctx.fillText('隱沒板塊',sp.x+14,sp.y)}
+ ctx.fillStyle='#fffaf0';ctx.textAlign='left';ctx.fillText('地函（高溫的固體岩石，能極緩慢地流動）',14,h-12);ctx.textAlign='right';ctx.fillText('✦ 地震',w-12,h-12)}
+
+function taiwanSVG(){const up=(x,y)=>`<polygon points="${x-6},${y+1} ${x+6},${y+1} ${x},${y-9}" fill="#4a3526"/>`,rt=(x,y)=>`<polygon points="${x-1},${y-6} ${x-1},${y+6} ${x+9},${y}" fill="#4a3526"/>`;
+ return `<svg viewBox="0 0 400 260" class="tgmap"><defs><marker id="ah" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#c8643b"/></marker></defs>
+<rect width="400" height="260" rx="10" fill="#cfe3de"/>
+<path d="M0 0 H150 C140 30 120 50 150 70 C165 85 150 110 120 130 C95 150 80 175 40 190 C25 200 10 205 0 210Z" fill="#e8cf9c" stroke="#4a3526" stroke-width="2"/>
+<ellipse cx="200" cy="135" rx="18" ry="52" transform="rotate(20 200 135)" fill="#8a9a5b" stroke="#4a3526" stroke-width="2"/>
+<path d="M222 100 Q300 96 392 52" fill="none" stroke="#4a3526" stroke-width="2.5"/>${up(250,99)}${up(290,95)}${up(330,85)}${up(366,68)}
+<path d="M188 190 Q184 225 176 258" fill="none" stroke="#4a3526" stroke-width="2.5"/>${rt(187,202)}${rt(184,226)}${rt(179,248)}
+<circle cx="300" cy="78" r="3.5" fill="#8a9a5b"/><circle cx="328" cy="66" r="3.5" fill="#8a9a5b"/><circle cx="354" cy="52" r="3.5" fill="#8a9a5b"/>
+<path d="M340 208 L282 170" stroke="#c8643b" stroke-width="4" marker-end="url(#ah)"/>
+<text x="14" y="28" font-size="15" fill="#4a3526">歐亞板塊（中國大陸）</text><text x="228" y="148" font-size="16" fill="#4a3526">台灣</text>
+<text x="275" y="122" font-size="14" fill="#4a3526">琉球海溝</text><text x="300" y="44" font-size="13" fill="#4a3526">琉球群島</text>
+<text x="170" y="254" font-size="14" fill="#4a3526" text-anchor="end">馬尼拉海溝</text><text x="30" y="226" font-size="13" fill="#3f6f78">南海</text>
+<text x="250" y="240" font-size="15" fill="#4a3526">菲律賓海板塊</text><text x="300" y="200" font-size="12" fill="#c8643b">每年約 7～8 公分</text></svg>`}
+
+/* ================= 輔助 ================= */
+function hist(h){add(`<div class="telegram small"><div class="tg-head">📜 真實的科學史</div>${h}</div>`)}
+function stage(h){const s=$('#htmlStage');s.innerHTML=h;return s}
+function shipDrag(lo,hi){let drag=false;return(ty,px)=>{if(ty==='up'){drag=false;return}if(ty==='down')drag=true;if(drag)ship.target=clamp(SC.iX(px),lo,hi)}}
+function veOf(ch){const pw=ch.w-ch.pad.l-ch.pad.r,ph=ch.h-ch.pad.t-ch.pad.b;return((ch.xmax-ch.xmin)/pw)/((ch.ymax-ch.ymin)/ph)}
+const fmtAge=a=>a<1?a.toFixed(2):a.toFixed(1);
+
+const EVID=[
+ {id:'ridge',t:'中洋脊隆起，山頂有裂谷',e:{A:1,B:1,C:1},w:'三個假說都「有辦法」說明有山脈：A 說它只是普通山脈（但說不出為何有裂谷）；B、C 都說中洋脊是被撐開或拉開的裂口，裂谷正是被拉開的痕跡。這一項難分高下。'},
+ {id:'deepen',t:'離中洋脊越遠海越深，左右對稱',e:{A:0,B:1,C:1},w:'B、C：新岩石又熱又膨脹，所以比較高；離開中洋脊後慢慢冷卻收縮，海底就變深。A 的海底沒有新舊之分，說不出為何幾千公里內都規律地變深。'},
+ {id:'sed',t:'沉積物中央薄、兩側厚',e:{A:0,B:1,C:1},w:'A：海底一樣老，沉積物應該到處差不多厚 ✘。B、C：中央的岩石剛形成，還來不及堆積沉積物 ✔。'},
+ {id:'heat',t:'熱流中央高、兩側低',e:{A:0,B:1,C:1},w:'B、C：熱的物質從中洋脊冒出，離開後逐漸冷卻。A 無法說明熱為何集中在大洋正中央。'},
+ {id:'mag',t:'磁條帶平行中洋脊、左右鏡像',e:{A:0,B:1,C:1},w:'B、C：新岩石在中洋脊冷卻時記錄當時的磁場，再被一分為二推往兩側，自然左右對稱。A 無法解釋這種對稱。'},
+ {id:'magtime',t:'條帶順序與地磁倒轉年表吻合',e:{A:0,B:1,C:1},w:'B、C 都預測海底年齡隨距離增加，條帶就成了一份「時間紀錄」。A 認為海底一樣老，不應該出現時間順序。'}];
+
+/* ================= 章節步驟 ================= */
+const STEPS=[
+/* ---------- 0 任務簡報 ---------- */
+{ch:0,title:'任務簡報',enter(){layout('html');
+ const s=stage(`<div class="telegram"><div class="stamp">機密</div><div class="tg-head">海洋研究局　電報</div><div class="tg-date">一九六〇年代</div>
+ <p>致 新任深海調查員：</p>
+ <p>海洋覆蓋地球七成的表面，但人類對海底的了解少得驚人。</p>
+ <p>海底到底是「古老不變的平原」、「地球膨脹時撐開的裂口」，還是「不斷新生又消失的輸送帶」？學界吵得不可開交。</p>
+ <p>你的任務：搭乘研究船橫越北大西洋，<b>親手蒐集證據</b>，最後交一份調查報告，說明哪一種說法最站得住腳。</p>
+ <p>記住：好的調查員<b>先預測、再測量，誠實面對結果</b>。預測錯了沒關係，那常常正是發現的起點。</p>
+ <p style="text-align:right">—— 海洋研究局局長</p></div>
+ <div class="center"><label>調查員姓名：<input class="inp" id="nm" style="width:220px;display:inline-block" maxlength="20" value="${esc(S.name)}"></label></div>
+ <div class="center"><button class="btn big" id="acc">✍️ 接受任務</button></div>`);
+ s.querySelector('#acc').onclick=()=>{const v=s.querySelector('#nm').value.trim();if(!v){toast('請先寫下你的名字');return}S.name=v;save();go(1)};
+ guide('歡迎登船！');add(`<p>我是研究船的船長。這趟旅程共有 <b>7 站</b>：</p><ol>${CHAPTERS.slice(1).map(c=>`<li>${c}</li>`).join('')}</ol>`);
+ add('<div class="task">📓 下方是你的<b>調查筆記本</b>：線索、你的預測與想法，以及三個假說的「存活狀態」都會自動記錄。</div>');
+ add('<p class="muted">進度會自動存在這台裝置的瀏覽器裡，下次打開可以接著做。</p>')}},
+
+/* ---------- 1 聲納：預測 ---------- */
+{ch:1,title:'聲納測深：預測',enter(){layout('html');
+ const sh={A:'M0 58 C50 57 150 59 200 58',B:'M0 30 C60 40 80 75 100 76 C120 75 140 40 200 30',C:'M0 70 C60 66 80 40 100 26 C120 40 140 66 200 70'};
+ const svg=k=>`<svg viewBox="0 0 200 90"><rect width="200" height="90" fill="#a7cfc9"/><path d="${sh[k]} L200 90 L0 90Z" fill="#d6b388" stroke="#4a3526" stroke-width="2.5"/></svg>`;
+ const s=stage(`<h2 class="h2">🗺 第一站：橫越北大西洋</h2>${mapSVG()}<p>根據韋格納的「大陸漂移說」，南美洲與非洲以前是合在一起的。它們究竟是如何分開的呢？請你好好去探索海底究竟有些甚麼。出發前先預測：<b>北美洲和非洲之間的北大西洋海底，切開來的剖面長什麼樣子？</b></p><div class="shapes">${['A','B','C'].map(k=>`<button class="shape${S.pred1===k?' sel':''}" data-k="${k}">${svg(k)}${PRED_NAME[k]}</button>`).join('')}</div>`);
+ guide('聲納測深：先預測');add('<div class="task">🤔 在左邊選出你預測的海底形狀。沒有標準答案，憑直覺和你知道的知識就好！</div>');
+ let started=false;
+ s.querySelectorAll('.shape').forEach(b=>b.onclick=()=>{S.pred1=b.dataset.k;save();s.querySelectorAll('.shape').forEach(x=>x.classList.toggle('sel',x===b));if(started)return;started=true;
+  seq([n=>openQ(`你選了「${PRED_NAME[S.pred1]}」。為什麼這樣猜？`,{label:`海底形狀預測：${PRED_NAME[S.pred1]}`,ph:'我覺得海底像……因為……',onDone:()=>n()}),
+   n=>{add('<p>🔊 1960 年代的研究船用<b>回聲測深儀（聲納）</b>量海深：船底發出聲波，聲波碰到海底反彈回來，只要計時就能算出深度。</p>');n()},
+   n=>calc('聲納發出聲波後 <b>6.0 秒</b>收到海底的回音。聲波在海水中每秒約前進 1500 公尺，這裡的海深是多少公尺？',{ans:4500,tol:5,unit:'公尺',hint:'聲波走了一趟「去」再「回來」。',traps:[{v:9000,fb:'🤔 9000 公尺是聲波走的總路程喔！它要去、還要回來。'}],good:'1500 × 6 ÷ 2 ＝ 4500 公尺。',onDone:()=>n()}),
+   n=>calc('換到另一個地點，回音只花了 <b>3.4 秒</b>。這裡的海深是多少公尺？',{ans:2550,tol:5,unit:'公尺',traps:[{v:5100,fb:'🤔 別忘了除以 2！'}],good:'2550 公尺，比剛才淺了將近 2 公里！',onDone:()=>n()}),
+   n=>{add('<div class="task good">👍 你已經會用聲納了。接下來船會一邊航行一邊連續測量，幫你畫出整條剖面。</div>');nextBtn('出發測量 →')}])})}},
+
+/* ---------- 2 聲納：橫越北大西洋 ---------- */
+{ch:1,title:'聲納測深：橫越北大西洋',enter(){layout('dual');S.zoom=false;rangeOcean(false);ship.x=ship.target=-1900;ship.speed=1200;
+ const bin=x=>Math.floor((x+2000)/20),seen=new Set(S.sonar),has=x=>seen.has(bin(x));
+ const mark=(a,b)=>{const lo=Math.min(a,b),hi=Math.max(a,b);for(let k=bin(lo);k<=bin(hi);k++)if(!seen.has(k)){seen.add(k);S.sonar.push(k)}};
+ mark(ship.x,ship.x);const B0=bin(-1950),B1=bin(1950),TOT=B1-B0+1,st=span('');let done=false;
+ const cov=()=>{let c=0;for(const k of seen)if(k>=B0&&k<=B1)c++;return c/TOT};
+ view.sp=shipDrag(-1950,1950);
+ view.update=dt=>{shipUpdate(dt,mark);const c=cov();st.textContent=`已探測 ${Math.round(c*100)}%`;if(!done&&c>=.9){done=true;save();after()}};
+ view.scene=(ctx,t)=>{drawOcean(ctx,t,{reveal:has});if(ship.x>=SC.xmin&&ship.x<=SC.xmax){const px=SC.X(ship.x),sy=SC.Y(0),fy=SC.Y(W.depth(ship.x));
+  ctx.save();ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.5;for(let k=0;k<3;k++){const r=((t*1.2+k/3)%1)*(fy-sy);ctx.globalAlpha=1-r/(fy-sy+1);ctx.beginPath();ctx.arc(px,sy,Math.max(1,r),Math.PI*.3,Math.PI*.7);ctx.stroke()}ctx.restore();drawShip(ctx,px,sy,t)}};
+ view.chart=ctx=>chartDepth(ctx,has);
+ controls([btn('⏩ 自動航行到對岸',()=>{ship.target=ship.x<0?SC.xmax-50:SC.xmin+50},'btn alt'),st]);
+ guide('聲納測深：橫越北大西洋');add('<div class="task">🚢 <b>拖曳上方畫面</b>讓船移動（或按「自動航行」）。船經過的地方，聲納就會畫出海底。<br>目標：探測 90% 以上的航線。</div>');
+ add(`<p class="muted">你之前的預測：<b>${PRED_NAME[S.pred1]||'（未選）'}</b></p>`);
+ function after(){const ve=Math.max(1,Math.round(veOf(CH)/5)*5);let crest=9;for(let x=-60;x<=60;x++)crest=Math.min(crest,W.depth(x));
+  const far=(W.depth(-1000)+W.depth(1000))/2,rise=Math.round((far-crest)*10)/10,slope=Math.round(rise/1000*10000)/100;
+  seq([n=>mcq('看看完整的剖面，下列哪些描述正確？（可複選）',[{t:'大洋中央有一條隆起的海底山脈',ok:1},{t:'離大洋中央越遠，海越深',ok:1},{t:'東、西兩側的形狀大致對稱',ok:1},{t:'海底大致是平坦的',ok:0},{t:'大洋中央是最深的地方',ok:0}],{multi:true,onDone:()=>{addClue('ridge');addClue('deepen');n()}}),
+   n=>{add('<p>這條山脈叫做<b>中洋脊</b>。剖面圖上的它看起來又高又陡……真的是這樣嗎？</p>');n()},
+   n=>calc(`從圖上讀出：距中洋脊 1000 公里處海深約 ${far.toFixed(1)} 公里，中洋脊山頂約 ${crest.toFixed(1)} 公里，高度差約 <b>${rise} 公里</b>。<br>平均坡度（高度差 ÷ 水平距離 × 100%）是多少 %？`,{ans:slope,tol:.02,unit:'%',hint:`${rise} ÷ 1000 × 100`,traps:[{v:slope/100,fb:'🤔 你算出的是比值，記得乘以 100 換成百分比。'}],good:`約 ${slope}%，也就是每走 1 公里只上升約 ${rise.toFixed(1)} 公尺。無障礙坡道都還有約 8% 呢！`,onDone:()=>n()}),
+   n=>mcq('那為什麼剖面圖上看起來那麼陡？',[{t:'因為圖的垂直方向被放大了很多倍',ok:1,fb:`✅ 沒錯！這張圖的垂直方向放大了約 ${ve} 倍。不放大的話起伏根本看不出來，但讀圖時一定要留意這一點。`},{t:'因為聲納量錯了',ok:0},{t:'因為山脈真的很陡',ok:0,fb:`🤔 你剛剛算出的坡度只有約 ${slope}%……`}],{onDone:()=>n()}),
+   n=>{add('<p>船長：「山頂那一段好像怪怪的，放大來看看。」</p>');const d=add('');const b=btn('🔍 放大中洋脊（±150 公里）',()=>{b.disabled=true;S.zoom=true;rangeOcean(true);mark(-160,160);ship.x=ship.target=clamp(ship.x,-140,140);view.sp=shipDrag(-145,145);n()},'btn teal');d.appendChild(b)},
+   n=>mcq('放大後，中洋脊山頂的正中央有什麼？',[{t:'一道往下凹的裂谷',ok:1,fb:'✅ 這就是<b>中洋脊裂谷</b>。1950 年代的海洋製圖師瑪麗．撒普（Marie Tharp）就是在測深資料中注意到它的。'},{t:'一座尖尖的火山峰',ok:0},{t:'一片平坦的高原',ok:0}],{onDone:()=>{addClue('rift');n()}}),
+   n=>{add(`<p>你原本預測：<b>${PRED_NAME[S.pred1]||'（未選）'}</b>。</p>`);poe('海底形狀',n)},
+   n=>openQ('裂谷看起來比較像地殼被「拉開」，還是被「擠壓」？說說你的理由。',{label:'裂谷的想法',ph:'我覺得是……因為……',onDone:()=>n()}),
+   n=>{hist('1950 年代，希森（Bruce Heezen）與撒普把成千上萬筆聲納資料畫成海底地形圖，發現中洋脊和裂谷幾乎繞了地球一圈，總長超過 6 萬公里。');nextBtn('下一章：沉積與熱流 →')}])}}},
+
+/* ---------- 3 沉積物 ---------- */
+measureStep({title:'沉積物厚度',key:'sed',pred:'predSed',ymax:1200,what:'沉積物厚度',ylabel:'沉積物厚度（公尺）',ctitle:'🟫 沉積物厚度',color:'#8a5a3b',
+ measure:x=>Math.max(1,W.sed(x)*(1+.06*gauss())),marker:sedMarker,cond:c=>c.w>=3&&c.e>=3&&c.c>=2,
+ minTxt:'西側、東側各至少 3 點，中央（距中洋脊 200 公里內）至少 2 點。',
+ intro:'<p>海水中浮游生物的遺骸和細小的塵土，會像下雪一樣<b>極緩慢</b>地落到海底，一層層堆成沉積物。</p><p>震測儀可以用聲波穿透沉積層，量出它有多厚。</p>',
+ after(){seq([n=>mcq('實測結果顯示什麼規律？',[{t:'中洋脊附近沉積物最薄，越往兩側越厚',ok:1},{t:'到處的厚度都差不多',ok:0},{t:'中洋脊附近最厚',ok:0}],{onDone:()=>{addClue('sed');n()}}),
+  n=>poe('沉積物厚度',n),n=>{add('<div class="task good">📌 線索已記錄。沉積物就像「時間的沙漏」：堆得越厚，代表經過的時間越久。</div>');nextBtn()}])}}),
+
+/* ---------- 4 熱流 ---------- */
+measureStep({title:'海底熱流',key:'heat',pred:'predHeat',ymax:320,what:'熱流',ylabel:'熱流（毫瓦／平方公尺）',ctitle:'🔥 海底熱流',color:'#e0703c',
+ measure:x=>{const b=W.heat(x),s=Math.abs(x)<250?.28:.07;return clamp(b*(1+s*gauss()),20,315)},marker:heatMarker,cond:c=>c.w>=3&&c.e>=3&&c.c>=3,
+ minTxt:'西側、東側各至少 3 點，中央（距中洋脊 200 公里內）至少 3 點。',
+ intro:'<p>地球內部很熱，熱量會慢慢從海底傳出來。<b>熱流探針</b>就像一根長長的溫度計，插進海底的泥裡，量出每平方公尺每秒流出多少熱。</p><p class="muted">單位：毫瓦／平方公尺。大陸的平均值約 60～70。</p>',
+ after(){seq([n=>mcq('熱流的整體趨勢是？',[{t:'中洋脊附近最高，往兩側逐漸降低',ok:1},{t:'兩側最高，中央最低',ok:0},{t:'沒有明顯趨勢',ok:0}],{onDone:()=>n()}),
+  n=>mcq('中洋脊附近的數據特別分散，忽高忽低。你會怎麼處理？',[{t:'保留數據、多測幾點看整體趨勢，並思考造成分散的原因',ok:1,fb:'✅ 好科學家不會隨便丟數據。真實原因之一：中洋脊的岩石裂縫很多，冰冷的海水滲進去循環（熱液循環），帶走部分熱量，讓單點測量忽高忽低。'},{t:'那些點一定量錯了，直接刪掉',ok:0,fb:'🤔 隨便刪掉「不合意」的數據很危險，可能正好刪掉了新發現。'},{t:'數據分散，代表規律不存在',ok:0,fb:'🤔 有雜訊不代表沒有趨勢，看看兩側的整體走向。'}],{onDone:()=>{addClue('heat');n()}}),
+  n=>poe('熱流',n),n=>nextBtn()])}}),
+
+/* ---------- 5 沉積物推年齡 ---------- */
+{ch:2,title:'沉積物會說話',enter(){layout('html');
+ const pts=(S.sed.length?S.sed:[{x:-1500,v:W.sed(-1500)},{x:30,v:W.sed(30)}]).slice().sort((a,b)=>Math.abs(a.x)-Math.abs(b.x));
+ const far=pts[pts.length-1],near=pts[0],R=6,fv=Math.round(far.v),nv=Math.round(near.v);
+ stage(`<h2 class="h2">🟫 你的沉積物測量紀錄</h2><table class="matrix"><tr><th>測點</th><th>距中洋脊（公里）</th><th>方向</th><th>沉積物厚度（公尺）</th></tr>${pts.map((p,i)=>`<tr><td>${i+1}</td><td>${Math.round(Math.abs(p.x))}</td><td>${p.x<0?'西':'東'}</td><td>${Math.round(p.v)}</td></tr>`).join('')}</table>
+ <div class="telegram small"><div class="tg-head">🔬 實驗室資料</div>從海底採回的泥芯顯示：遠洋沉積物每 <b>100 萬年</b>大約只堆積 <b>${R} 公尺</b>，相當於每 1000 年才 6 公釐！</div>`);
+ guide('沉積物會說話');
+ seq([n=>calc(`你在距中洋脊 ${Math.round(Math.abs(far.x))} 公里處測到沉積物約 <b>${fv} 公尺</b>。這些沉積物大約花了多少<b>百萬年</b>才堆成？`,{ans:fv/R,tol:Math.max(1,fv/R*.05),unit:'百萬年',hint:'厚度 ÷ 每百萬年堆積的厚度',good:`約 ${Math.round(fv/R)} 百萬年，也就是約 ${(fv/R/100).toFixed(1)} 億年。`,onDone:()=>n()}),
+  n=>mcq('那麼，這些沉積物底下的海底岩石，年齡應該是？',[{t:'至少和沉積物一樣老（先有岩石，沉積物才堆上去）',ok:1},{t:'一定比沉積物年輕',ok:0,fb:'🤔 想想看：岩石要先存在，沉積物才能落在它上面。'},{t:'無法判斷任何事',ok:0,fb:'🤔 其實可以推出一個「最小值」喔。'}],{onDone:()=>n()}),
+  n=>calc(`用同樣的方法：離中洋脊最近的測點（${Math.round(Math.abs(near.x))} 公里）沉積物約 ${nv} 公尺，大約是多少百萬年？（可填小數）`,{ans:nv/R,tol:Math.max(.3,nv/R*.08),unit:'百萬年',good:'非常年輕！',onDone:()=>n()}),
+  n=>mcq('把沉積物與熱流兩條線索放在一起，最合理的推論是？',[{t:'中洋脊附近的海底又「年輕」又熱；離中洋脊越遠，海底越老、越冷',ok:1},{t:'整個大洋海底一樣老',ok:0},{t:'中洋脊附近的海底最古老',ok:0}],{onDone:()=>n()}),
+  n=>openQ('大膽猜猜看：為什麼大洋中央的海底會比較「年輕」？',{label:'年輕海底的猜想',ph:'也許是因為……',onDone:()=>n()}),
+  n=>{add('<div class="warnbox">⚠️ 調查員注意：沉積速率在不同海域其實不一樣，這種推算只能得到「大概」的數字。我們需要另一種<b>獨立</b>的方法來檢驗……</div>');nextBtn('下一章：磁力之謎 →')}])}},
+
+/* ---------- 6 磁力：單條測線 ---------- */
+{ch:3,title:'磁力之謎：第一條測線',enter(){layout('dual');SC.set({xmin:-90,xmax:90,ymin:0,ymax:4.6,inv:true,pad:{t:62,b:10}});CH.set({xmin:-80,xmax:80,ymin:-420,ymax:420,inv:false,pad:{t:30}});
+ ship.x=ship.target=-80;ship.speed=16;let run=false,done=false;
+ view.update=dt=>{if(!run)return;ship.target=80;shipUpdate(dt);if(!done&&ship.x>=80){done=true;after()}};
+ view.scene=(ctx,t)=>{drawOcean(ctx,t);const px=SC.X(ship.x),sy=SC.Y(0);ctx.save();ctx.strokeStyle=INK;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(px-24,sy+2);ctx.quadraticCurveTo(px-50,sy+20,px-70,sy+22);ctx.stroke();
+  ctx.fillStyle='#f0b54f';ctx.beginPath();ctx.ellipse(px-78,sy+22,9,4,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();drawShip(ctx,px,sy,t)};
+ view.chart=ctx=>chartMag(ctx,{main:x=>magAt(TR[2],x),upto:clamp(ship.x,-80,80),title:'🧲 磁力儀紀錄（航線 3）'});
+ const b=btn('▶ 開始拖曳磁力儀',()=>{run=true;b.disabled=true});controls([b]);
+ guide('磁力之謎');add('<p>二戰時為了偵測潛艇而發展的<b>磁力儀</b>，現在被拖在船尾，用來測量海底岩石造成的磁場變化。</p><p><b>磁異常</b>＝實測磁場 − 當地的平均磁場。正值代表比平均強，負值代表比平均弱。</p>');
+ add('<div class="task">▶ 按下按鈕，讓船從中洋脊西側 80 公里航行到東側 80 公里。</div>');
+ function after(){seq([n=>mcq('這條紀錄有什麼特色？（可複選）',[{t:'磁異常正、負交替出現',ok:1},{t:'以中洋脊為中心，左右兩側的圖形像照鏡子一樣',ok:1},{t:'中洋脊正上方是正異常',ok:1},{t:'離中洋脊越遠，磁異常越強',ok:0},{t:'完全沒有規律',ok:0}],{multi:true,onDone:()=>n()}),
+  n=>openQ('海底岩石的磁性為什麼會一段強、一段弱？寫下你的猜想。',{label:'磁異常的猜想',ph:'可能是因為……',onDone:()=>n()}),
+  n=>{hist('1950 年代中期，梅森（Ronald Mason）與拉夫（Arthur Raff）在北美洲西岸外海拖著磁力儀來回航行，畫出了像斑馬紋一樣的磁異常地圖，但當時沒有人能解釋它。');nextBtn('收到一封陸地來的電報 →')}])}}},
+
+/* ---------- 7 陸地電報 ---------- */
+{ch:3,title:'陸地來的電報',enter(){layout('html');
+ stage(`<div class="telegram"><div class="stamp">急件</div><div class="tg-head">陸地地質組　電報</div>
+ <p>我們在冰島、夏威夷等地，測量一層層火山熔岩的<b>磁化方向</b>，並用放射性元素定出每一層的年代。</p>
+ <p>熔岩冷卻時，裡面的含鐵礦物（例如磁鐵礦）會像小指北針一樣順著<b>當時的地球磁場</b>排列，冷卻後方向就被「鎖住」了。</p>
+ <p>驚人的結果：地球磁場的南北極<b>曾經多次對調</b>！下面是我們整理出來的「地磁倒轉年表」：</p>${timelineSVG()}
+ <p style="font-size:15px">■ 深色＝正向期（和現在一樣，指北針指北）　□ 淺色＝反向期（指北針會指向南方）</p></div>`);
+ guide('陸地來的電報');
+ seq([n=>mcq('根據年表，最近一次地磁倒轉大約發生在多久以前？',[{t:'約 78 萬年前',ok:1},{t:'約 7800 年前',ok:0},{t:'約 780 萬年前',ok:0,fb:'🤔 注意橫軸的單位是「百萬年」，0.78 百萬年是多少年？'}],{onDone:()=>n()}),
+  n=>mcq('正向期和反向期的長度有什麼特色？',[{t:'長短不一，沒有固定週期',ok:1,fb:'✅ 正因為長短不一，這串黑白就像獨一無二的「條碼」，可以拿來比對！'},{t:'每一段都一樣長',ok:0}],{onDone:()=>n()}),
+  n=>mcq('假設海底岩石也是由熔岩冷卻形成的。海上磁異常「一段強、一段弱」，最可能代表什麼？',[{t:'不同段的岩石形成於不同時期，分別記錄了正向或反向的地磁',ok:1,fb:'✅ 正向磁化的岩石會加強現在的磁場（正異常）；反向磁化的岩石會抵消一部分（負異常）。'},{t:'海底岩石的含鐵量隨機變化',ok:0,fb:'🤔 有可能，但這無法解釋為什麼左右對稱。'},{t:'磁力儀故障',ok:0}],{onDone:()=>n()}),
+  n=>{hist('20 世紀初，法國的布容（Bernard Brunhes）發現有些熔岩的磁化方向和現在相反；1929 年，日本的松山基範提出地磁曾經倒轉。1960 年代，考克斯（Allan Cox）等人結合熔岩定年，排出了倒轉年表。現在這個正向期就叫「布容正向期」，前一個反向期叫「松山反向期」。');nextBtn('測繪整片海域 →')}])}},
+
+/* ---------- 8 六條航線 ---------- */
+{ch:3,title:'磁力之謎：六條平行航線',enter(){layout('single');SC.set({xmin:-80,xmax:80,ymin:0,ymax:6,inv:true,pad:{l:62,r:18,t:34,b:36}});S.tracks=[];stripeOn=false;stripeCache=null;let cur=null,fast=false;
+ const nb=btn('',()=>{if(cur||S.tracks.length>=6)return;cur={i:S.tracks.length};ship.x=-80;ship.target=80;upd()}),fb=btn('⏩ 快轉剩下的航線',()=>{fast=true;if(!cur)nb.onclick()},'btn alt');
+ function upd(){nb.textContent=S.tracks.length<6?`🚢 航行航線 ${S.tracks.length+1}／6`:'✅ 六條航線完成';nb.disabled=!!cur||S.tracks.length>=6;fb.disabled=S.tracks.length>=6}
+ view.update=dt=>{if(!cur)return;ship.speed=fast?400:70;shipUpdate(dt);if(ship.x>=80){S.tracks.push(cur.i);cur=null;stripeCache=null;save();upd();if(S.tracks.length===6)after();else if(fast)nb.onclick()}};
+ view.scene=(ctx,t)=>drawMap(ctx,t,cur);controls([nb,fb]);upd();
+ guide('六條平行航線');add('<p>一條測線只是一條線。為了看出磁異常在海底「平面上」怎麼分布，我們沿著六條東西向的平行航線測量。</p><div class="task">🚢 依序航行六條航線，每完成一條，紀錄就會畫在地圖上。</div>');
+ function after(){seq([n=>{add('<div class="task">🖍 六條紀錄線看起來有點亂。試試看：把每條線上「正異常」的地方塗成深色。</div>');const d=add('');const b=btn('🖍 把正異常塗成深色',()=>{b.disabled=true;stripeOn=true;stripeCache=null;n()},'btn teal');d.appendChild(b)},
+  n=>mcq('塗色之後出現了什麼圖案？（可複選）',[{t:'一條條深淺相間的條帶',ok:1},{t:'條帶的走向和中洋脊軸平行（軸彎，條帶也跟著彎）',ok:1},{t:'條帶以中洋脊軸為中心左右鏡像對稱',ok:1},{t:'條帶和中洋脊軸互相垂直',ok:0},{t:'每一條條帶寬度都相同',ok:0}],{multi:true,onDone:()=>{addClue('mag');n()}}),
+  n=>nextBtn('比對條碼 →')])}}},
+
+/* ---------- 9 條碼比對 ---------- */
+{ch:3,title:'條碼大比對',enter(){layout('dual');SC.set({xmin:-80,xmax:80,ymin:0,ymax:6,inv:true,pad:{l:62,r:18,t:34,b:36}});CH.set({pad:{l:20,r:20,t:24,b:10}});S.tracks=[0,1,2,3,4,5];stripeOn=true;stripeCache=null;
+ view.scene=(ctx,t)=>drawMap(ctx,t,null);view.chart=ctx=>chartBars(ctx);
+ guide('條碼大比對');add('<div class="task">🔍 下方把航線 3 的東側、西側，以及陸地的地磁倒轉年表，都畫成「條碼」。仔細比對它們。</div>');
+ seq([n=>mcq('這三條條碼之間有什麼關係？',[{t:'東、西兩側互為鏡像，而且寬窄順序和陸地年表吻合',ok:1},{t:'東西兩側相同，但和陸地年表無關',ok:0,fb:'🤔 再看看第三條，從左邊開始逐段比對寬窄。'},{t:'三條完全不同',ok:0}],{onDone:()=>{addClue('magtime');n()}}),
+  n=>mcq('陸地條碼的橫軸是「時間」，海上條碼的橫軸是「距離」。兩者吻合，暗示什麼？',[{t:'離中洋脊越遠的海底，形成的年代越早',ok:1},{t:'海底的年齡到處都一樣',ok:0},{t:'地磁倒轉只發生在海上',ok:0}],{onDone:()=>n()}),
+  n=>calc('第一段正向期是「現在 → 78 萬年前」。在海上，從中洋脊到第一條深色帶的邊界約 <b>9.4 公里</b>。這段海底平均每<b>百萬年</b>「移動」了幾公里？',{ans:12,tol:.5,unit:'公里／百萬年',hint:'9.4 公里 ÷ 0.78 百萬年',traps:[{v:7.33,fb:'🤔 應該是距離「除以」時間喔。'},{v:.083,fb:'🤔 距離 ÷ 時間，別除反了。'}],good:'約 12 公里／百萬年。不過這只用了「一個」邊界來估算，下一章會用整條紀錄來檢驗。',onDone:()=>n()}),
+  n=>nextBtn('下一章：假說法庭 →')])}},
+
+/* ---------- 10 假說法庭 ---------- */
+{ch:4,title:'假說法庭',enter(){layout('html');const V=['','✔','✘'];
+ const s=stage(`<h2 class="h2">⚖️ 假說法庭</h2><p>三位「被告」各自主張海底的真相。請你當法官：面對每一項證據，這個假說<b>能不能合理解釋</b>？點格子切換 ✔／✘。</p>
+ <div class="hypcards">${['A','B','C'].map(k=>`<div class="hcard" style="--c:${HYP[k].c}"><b>${HYP[k].name}</b><p>${HYP[k].d}</p></div>`).join('')}</div>
+ <table class="matrix" id="mx"><tr><th>證據</th><th>A 固定</th><th>B 膨脹</th><th>C 擴張</th></tr>${EVID.map((r,i)=>`<tr><td class="ev">${CLUES[r.id].icon} ${r.t}</td>${['A','B','C'].map(h=>`<td><button class="cell" data-k="${i}${h}">${S.matrix[i+h]||''}</button></td>`).join('')}</tr><tr class="why"><td colspan="4">💬 ${r.w}</td></tr>`).join('')}</table>
+ <div class="center"><button class="btn big" id="judge">🔨 宣判！看看專家怎麼判</button></div><div id="verdict"></div>`);
+ const mx=s.querySelector('#mx');
+ s.querySelectorAll('.cell').forEach(c=>c.onclick=()=>{if(mx.classList.contains('judged'))return;const v=V[(V.indexOf(c.textContent)+1)%3];c.textContent=v;S.matrix[c.dataset.k]=v;save()});
+ const jb=s.querySelector('#judge');jb.onclick=()=>{const cells=[...s.querySelectorAll('.cell')];if(cells.some(c=>!c.textContent)){toast('還有格子沒判斷喔！');return}
+  let m=0;cells.forEach(c=>{const i=+c.dataset.k[0],h=c.dataset.k[1],exp=EVID[i].e[h]?'✔':'✘',ok=c.textContent===exp;if(ok)m++;c.classList.add(ok?'match':'diff');c.title='專家判斷：'+exp;if(!ok){c.textContent=`${c.textContent}→${exp}`;c.style.fontSize='16px'}});
+  mx.classList.add('judged');jb.disabled=true;
+  s.querySelector('#verdict').innerHTML=`<div class="task good">你和專家有 <b>${m}／18</b> 格判斷相同。看看每一列下方的說明，尤其是紅色（判斷不同）的格子。</div>`;
+  S.hyp.A='淘汰';S.hyp.B='存活';S.hyp.C='存活';renderNotebook();save();afterJ()};
+ guide('假說法庭');add('<div class="task">⚖️ 先讀完三個假說，再逐格判斷。判斷標準是：「如果這個假說是真的，會不會出現這項證據？」</div>');
+ function afterJ(){seq([n=>{add('<div class="warnbox">🏛 判決：<b>A 海底固定說</b>無法解釋大多數證據，<b>淘汰</b>！可是……B 和 C 竟然全部過關。</div>');n()},
+  n=>mcq('B 和 C 都能解釋所有證據。接下來科學家應該怎麼做？',[{t:'找出兩個假說「預測不同」的地方，再去蒐集那種證據',ok:1,fb:'✅ 這就是關鍵：兩個假說都能解釋的證據，沒辦法幫我們分辨它們。'},{t:'投票決定',ok:0,fb:'🤔 科學不是靠投票，而是靠證據。'},{t:'兩個都對，不用再查了',ok:0,fb:'🤔 地球不可能同時在膨脹、又保持大小不變……'}],{onDone:()=>n()}),
+  n=>openQ('想一想：B 說「地球變大」，C 說「地球大小不變」。如果 C 是對的，中洋脊一直產生新海底，那舊海底必須到哪裡去？',{label:'B 與 C 的差別',ph:'如果地球不變大，那麼……',onDone:()=>n()}),
+  n=>{add('<p>先把這個問題放在心上。接下來我們先用模型看看 C 描述的過程，再檢驗它能不能「定量」地重現磁條帶。</p>');nextBtn('看模型動畫 →')}])}}},
+
+/* ---------- 11 模型動畫 ---------- */
+{ch:4,title:'模型動畫：海底輸送帶',enter(){layout('single');SC.set({xmin:-80,xmax:80,ymin:0,ymax:1,pad:{l:20,r:20,t:10,b:10}});let tau=6.7,play=false,asked=false;
+ const sl=el('input');sl.type='range';sl.min=0;sl.max=6.7;sl.step=.01;sl.value=6.7;sl.style.direction='rtl';
+ const pb=btn('▶ 播放',()=>{if(tau<=0)tau=6.7;play=!play;pb.textContent=play?'⏸ 暫停':'▶ 播放'});
+ sl.oninput=()=>{tau=+sl.value;play=false;pb.textContent='▶ 播放'};
+ const lab=el('label','sl','⏳ 過去 ');lab.appendChild(sl);lab.appendChild(document.createTextNode(' 現在'));
+ view.update=dt=>{if(!play)return;tau=Math.max(0,tau-dt*.35);sl.value=tau;if(tau<=0){play=false;pb.textContent='↺ 重播';if(!asked){asked=true;after()}}};
+ view.scene=(ctx,t)=>drawConveyor(ctx,t,tau);controls([pb,lab]);
+ guide('模型動畫：海底輸送帶');add('<p>這是假說 C 的模型：中洋脊下方的地函物質上升，冷卻成新的洋殼，並把較老的洋殼往兩側推開。</p><div class="task">▶ 播放動畫，從 670 萬年前演到現在。注意左上角的指北針和洋殼的顏色。</div>');
+ function after(){seq([n=>mcq('為什麼模型中的條帶會左右鏡像對稱？',[{t:'每一批新洋殼在中洋脊形成後被一分為二，分別往兩側移動',ok:1},{t:'只是巧合',ok:0},{t:'東、西兩側的地磁不一樣',ok:0}],{onDone:()=>n()}),
+  n=>mcq('如果擴張速率變成兩倍，條帶會怎麼變？',[{t:'每一條都變成大約兩倍寬',ok:1,fb:'✅ 同樣的時間內推出兩倍多的洋殼，條帶就兩倍寬。所以<b>條帶寬度可以用來算擴張速率</b>！'},{t:'條帶數量變兩倍',ok:0,fb:'🤔 倒轉幾次是由地磁決定的，和擴張速率無關。'},{t:'不會改變',ok:0}],{onDone:()=>n()}),
+  n=>mcq('這個動畫本身能不能證明 C 是對的？',[{t:'不能。模型只展示「如果 C 為真」會發生什麼，還需要和真實數據比對',ok:1,fb:'✅ 很成熟的想法！而且 B 其實也能畫出類似的動畫。模型的價值在於做出可以檢驗的「定量預測」。'},{t:'能，動畫和觀察一模一樣',ok:0,fb:'🤔 動畫是我們自己設計的，當然可以做得很像……關鍵在於它能不能做出「可被檢驗」的預測。'}],{onDone:()=>n()}),
+  n=>nextBtn('用模型比對真實數據 →')])}}},
+
+/* ---------- 12 擬合擴張速率 ---------- */
+{ch:4,title:'找出擴張速率',enter(){layout('dual');SC.set({xmin:-80,xmax:80,ymin:0,ymax:1,pad:{l:62,r:18,t:10,b:10}});CH.set({xmin:-80,xmax:80,ymin:-420,ymax:420,inv:false,pad:{t:30}});
+ let v=6,MV=magArray(v),r=0,done=false;const obs=TR[2],i0=Math.round((-80-MAG.X0)/MAG.DX),i1=Math.round((80-MAG.X0)/MAG.DX),sub=a=>a.slice(i0,i1+1);
+ const sl=el('input');sl.type='range';sl.min=4;sl.max=24;sl.step=.5;sl.value=v;const vl=el('b'),mt=el('span','meter','<i></i>'),rl=el('span');
+ function upd(){v=+sl.value;MV=magArray(v);r=corr(sub(obs),sub(MV));vl.textContent=` ${v.toFixed(1)} 公里／百萬年`;mt.firstChild.style.width=Math.max(0,r*100)+'%';rl.textContent=`吻合度 ${Math.round(Math.max(0,r)*100)}%`}
+ sl.oninput=upd;const lab=el('label','sl','半擴張速率 ');lab.append(sl,vl);
+ const ok=btn('✅ 就是這個速率！',()=>{if(done)return;if(r<.88){toast('吻合度還不夠高（要 88% 以上），再微調看看');return}done=true;ok.disabled=true;sl.disabled=true;S.rate=v;save();after()});
+ controls([lab,mt,rl,ok]);upd();
+ view.scene=(ctx,t)=>drawConveyor(ctx,t,0,v);
+ view.chart=ctx=>chartMag(ctx,{main:x=>magAt(obs,x),model:{f:x=>magAt(MV,x)},title:'🧲 實測（黑）vs 模型預測（橘）'});
+ guide('找出擴張速率');add('<p>模型條帶的寬度取決於擴張速率。拖動滑桿，讓橘色的模型曲線和黑色的實測曲線盡量重疊。</p><div class="task">🎚 目標：吻合度達到 88% 以上。</div><p class="muted">吻合度＝兩條曲線的相關係數；100% 表示形狀完全一致。</p>');
+ function after(){const cm=+(v/10).toFixed(2);seq([n=>{add(`<div class="task good">📏 你找到的半擴張速率：<b>${v} 公里／百萬年</b>（吻合度 ${Math.round(r*100)}%）。</div>`);n()},
+  n=>calc(`換成比較熟悉的單位：${v} 公里／百萬年，等於每年多少<b>公分</b>？`,{ans:cm,tol:.02,unit:'公分／年',hint:'1 公里 ＝ 100,000 公分；1 百萬年 ＝ 1,000,000 年。',traps:[{v:v*10,fb:'🤔 太大了，檢查一下單位換算。'},{v:v/100,fb:'🤔 太小了，1 公里是 10 萬公分喔。'}],good:`每年約 ${cm} 公分！這是單側的速率，兩側加起來，大西洋每年變寬約 ${(cm*2).toFixed(1)} 公分，差不多是指甲生長的速度。`,onDone:()=>{addClue('rate',`由磁條帶擬合出半擴張速率約 ${v} 公里／百萬年（每年約 ${cm} 公分）`);n()}}),
+  n=>mcq('用「整條紀錄」來擬合，比上一章只用「一個邊界」估算好在哪裡？',[{t:'用到更多數據，單一邊界的量測誤差比較不會左右結果',ok:1},{t:'沒有差別',ok:0},{t:'只是比較快',ok:0}],{onDone:()=>n()}),
+  n=>{hist('1963 年，英國的范恩（Fred Vine）與馬修斯（Drummond Matthews）提出：磁條帶正是「海底擴張＋地磁倒轉」共同寫下的紀錄。加拿大的莫利（Lawrence Morley）幾乎同時想到同樣的點子，但論文被退稿，審稿意見說這種想法適合在雞尾酒會上聊。');nextBtn('下一章：鑽探驗證 →')}])}}},
+
+/* ---------- 13 鑽探 ---------- */
+{ch:5,title:'鑽探驗證',enter(){layout('dual');rangeOcean(false);CH.set({xmin:-2000,xmax:2000,ymin:0,ymax:180,inv:false,pad:{t:30}});
+ const rate=S.rate||12;S.drills=[];ship.x=ship.target=-600;ship.speed=1100;let probe=null,finished=false,lastPos='';
+ view.sp=shipDrag(-1950,1950);
+ const pin=el('input','inp num');pin.type='number';pin.step='any';pin.placeholder='預測年齡';const st=span(''),pos=span('');
+ view.update=(dt,t)=>{shipUpdate(dt);const ps=`🚢 距中洋脊 ${Math.round(Math.abs(ship.x))} 公里（${ship.x<0?'西':'東'}）`;if(ps!==lastPos){pos.textContent=ps;lastPos=ps}
+  if(probe&&t-probe.t0>1.4){const a=Math.max(.05,W.age(probe.x)*(1+.04*gauss())),d={x:probe.x,p:probe.p,a};S.drills.push(d);probe=null;
+   toast(`岩石年齡：${fmtAge(a)} 百萬年（你預測 ${d.p}）`);logNote(`鑽探 ${S.drills.length}：距中洋脊 ${Math.round(Math.abs(d.x))} 公里`,`預測 ${d.p}、實測 ${fmtAge(a)} 百萬年`);status();save()}};
+ view.scene=(ctx,t)=>{drawOcean(ctx,t);for(const d of S.drills){const px=SC.X(d.x),fy=SC.Y(W.depth(d.x));ctx.save();ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,fy);ctx.lineTo(px,fy+22);ctx.stroke();ctx.restore();dot(ctx,px,fy+22,4,'#c8643b')}
+  if(probe){const px=SC.X(probe.x),sy=SC.Y(0),fy=SC.Y(W.depth(probe.x)),k=clamp((t-probe.t0)/1.3,0,1);ctx.save();ctx.strokeStyle='#5b4332';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,sy);ctx.lineTo(px,lerp(sy,fy+22,k));ctx.stroke();ctx.restore()}
+  drawShip(ctx,SC.X(ship.x),SC.Y(0),t,true)};
+ view.chart=ctx=>{const ch=CH;axes(ctx,ch,{xt:niceTicks(-2000,2000,8),yt:niceTicks(0,180,6),xfmt:v=>Math.abs(v),xlabel:XLAB,ylabel:'岩石年齡（百萬年）'});ctitle(ctx,ch,'🧪 洋殼年齡：預測 vs 鑽探');
+  ctx.save();clipPlot(ctx,ch);ctx.setLineDash([7,5]);pencil(ctx,[[ch.X(-2000),ch.Y(2000/rate)],[ch.X(0),ch.Y(0)],[ch.X(2000),ch.Y(2000/rate)]],{color:'#c8643b',width:2});ctx.setLineDash([]);
+  for(const d of S.drills){ctx.save();ctx.strokeStyle='#c8643b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ch.X(d.x),ch.Y(d.p),6,0,Math.PI*2);ctx.stroke();ctx.restore();dot(ctx,ch.X(d.x),ch.Y(d.a),5,'#5b4332')}
+  ctx.restore();legend(ctx,ch,[['- - 速率模型','#c8643b'],['○ 你的預測','#c8643b'],['● 鑽探實測','#5b4332']])};
+ function status(){const d=S.drills,w=d.filter(p=>p.x<0).length,e=d.length-w,far=d.some(p=>Math.abs(p.x)>=1200);st.textContent=`已鑽 ${d.length} 孔（西 ${w}．東 ${e}）${far?'':'．還需要一孔距中洋脊 1200 公里以上'}`;
+  if(!finished&&d.length>=5&&w>=2&&e>=2&&far){finished=true;after()}}
+ const db=btn('⛏ 在這裡鑽探',()=>{if(probe)return;if(Math.abs(ship.target-ship.x)>1){toast('船還在移動中……');return}const x=ship.x;
+  if(Math.abs(x)>W.EDGE){toast('太靠近大陸了，請在大洋範圍內鑽探');return}if(S.drills.some(p=>Math.abs(p.x-x)<80)){toast('這附近鑽過了，換個地方吧');return}
+  const p=parseFloat(pin.value);if(isNaN(p)){toast('請先輸入你預測的岩石年齡');pin.focus();return}probe={x,p,t0:performance.now()/1000};pin.value=''});
+ controls([pos,el('span','','預測：'),pin,el('span','','百萬年'),db,st]);status();
+ guide('鑽探驗證');add(`<p>深海鑽探船可以從海底取出岩芯，再用化石和放射性定年測出岩石的年齡。</p><div class="task">🔮 <b>先預測，再鑽探</b>：<br>① 拖曳畫面把船移到想鑽的位置（下方會顯示距離）<br>② 用你算出的速率 <b>${rate} 公里／百萬年</b> 預測年齡，輸入後按「⛏ 鑽探」<br>要求：至少 5 孔，東、西各 2 孔以上，且有一孔距中洋脊 1200 公里以上。</div>`);
+ add(`<p class="muted">💡 年齡 ＝ 距離 ÷ 速率。例如距中洋脊 600 公里：600 ÷ ${rate} ≈ ${(600/rate).toFixed(0)} 百萬年。</p>`);
+ function after(){seq([n=>{const e=S.drills.map(d=>Math.abs(d.p-d.a)/Math.max(d.a,1)),m=Math.round(e.reduce((a,b)=>a+b,0)/e.length*100);add(`<div class="task good">📊 你的預測平均誤差約 <b>${m}%</b>。</div>`);n()},
+  n=>mcq('鑽探結果對「海底擴張說」代表什麼？',[{t:'它事先做的預測有可能失敗，結果卻通過了檢驗，所以更可信',ok:1,fb:'✅ 敢「冒著失敗的風險」做預測、而且通過檢驗，是好理論的標誌。'},{t:'它已經被百分之百證明是對的',ok:0,fb:'🤔 科學理論很少能被「百分之百證明」，只能說越來越可信。'},{t:'沒有意義，本來就知道了',ok:0}],{onDone:()=>{addClue('drill');n()}}),
+  n=>mcq('鑽到的洋殼最老也只有約 1.5 億年，陸地上最老的岩石卻約有 40 億年。這對假說 A 來說是？',[{t:'再次否定 A：海底並沒有和大陸一樣古老',ok:1},{t:'支持 A',ok:0}],{onDone:()=>n()}),
+  n=>mcq('這次鑽探能不能分辨 B（膨脹）和 C（擴張）？',[{t:'不能，因為兩者都預測海底年齡會隨距離增加',ok:1,fb:'✅ 沒錯。我們還需要一項「B 和 C 預測不同」的證據。'},{t:'能，C 贏了',ok:0,fb:'🤔 B 也會預測離裂口越遠的岩石越老喔。'}],{onDone:()=>n()}),
+  n=>{hist('1968 年起，深海鑽探計畫的「格洛瑪挑戰者號」在南大西洋鑽了一整排鑽孔，發現岩石年齡隨著離中洋脊的距離規律地增加，和磁條帶推算的結果幾乎一致。');nextBtn('下一章：消失的海底 →')}])}}},
+
+/* ---------- 14 消失的海底 ---------- */
+{ch:6,title:'消失的海底',enter(){layout('html');
+ stage(`<div class="telegram"><div class="tg-head">海洋研究局局長　電報</div><p>調查員，你的報告讓整個研究局沸騰了。但有位老教授提出質疑：</p>
+ <p style="font-size:19px">「如果中洋脊每年都在製造新海底，而地球大小不變，<b>那些舊海底跑到哪裡去了？</b>」</p>
+ <p>支持地球膨脹說（B）的學者說：「根本沒消失，是地球在變大！」</p><p>請先估算看看這件事的規模有多大。</p></div>
+ <div class="hypcards"><div class="hcard" style="--c:${HYP.B.c}"><b>${HYP.B.name}</b><p>新海底不斷增加 → 地球表面積變大</p></div><div class="hcard" style="--c:${HYP.C.c}"><b>${HYP.C.name}</b><p>新增多少海底，就有同樣多的舊海底在別處「消失」</p></div></div>`);
+ guide('消失的海底');
+ seq([n=>calc('全球中洋脊總長約 <b>60,000 公里</b>，平均每年兩側共拉開約 <b>5 公分</b>。每年新增的海底面積約多少<b>平方公里</b>？',{ans:3,tol:.05,unit:'平方公里／年',hint:'面積 ＝ 長 × 寬。先把 5 公分換成公里：5 公分 ＝ 0.00005 公里。',traps:[{v:300000,fb:'🤔 單位沒有統一喔：公里和公分不能直接相乘。'},{v:30,fb:'🤔 差了 10 倍，再檢查 5 公分等於幾公里。'},{v:.3,fb:'🤔 差了 10 倍，再檢查 5 公分等於幾公里。'}],good:'每年約 3 平方公里，大約是 400 多個足球場！',onDone:()=>n()}),
+  n=>calc('如果海底只生不滅，2 億年下來會增加多少「億」平方公里？',{ans:6,tol:.05,unit:'億平方公里',hint:'3 × 200,000,000 ＝ ？再換算成「億」。',good:'6 億平方公里！而地球現在的總表面積也才約 5.1 億平方公里。',onDone:()=>n()}),
+  n=>mcq('根據這個估算，B 必須主張什麼？',[{t:'地球的表面積在 2 億年內變成原來的兩倍以上',ok:1,fb:'✅ 這在物理上很難說得通（是什麼讓地球變大？重力會怎麼變？），但光是「難以想像」還不能淘汰它，我們需要直接的證據。'},{t:'地球大小不變',ok:0}],{onDone:()=>n()}),
+  n=>mcq('哪一種觀察最能直接分辨 B 和 C？',[{t:'找到海底正在「沉回地球內部」的地方',ok:1,fb:'✅ C 預測一定有這種地方；B 不需要，也不預期會有大規模的海底往下插。'},{t:'再多測幾條磁條帶',ok:0,fb:'🤔 B 和 C 都能解釋磁條帶喔。'},{t:'量更多的熱流',ok:0,fb:'🤔 B 和 C 對熱流的預測是一樣的。'}],{onDone:()=>n()}),
+  n=>{add('<p>船長：「聽說太平洋西緣有很深的<b>海溝</b>，那裡的地震特別多。台灣東北方的<b>琉球海溝</b>就是其中之一。我們去看看那裡的地震資料！」</p>');nextBtn('前往琉球海溝 →')}])}},
+
+/* ---------- 15 琉球海溝 ---------- */
+{ch:6,title:'琉球海溝的地震',enter(){layout('single');if(!S.quakes.length){S.quakes=genQuakes();save()}
+ SC.set({xmin:-100,xmax:500,ymin:0,ymax:350,inv:true,pad:{l:62,r:18,t:86,b:34}});
+ let count=0,H=null,fitted=false,drag=null,done=false,st=null;
+ view.scene=(ctx,t)=>drawTrench(ctx,t,count,H,fitted);
+ view.update=()=>{if(H&&st)st.textContent=`傾角 ≈ ${Math.round(dipOf(H))}°`};
+ view.sp=(ty,px,py)=>{if(!H||done)return;if(ty==='down'){let b=44;drag=null;H.forEach((p,i)=>{const d=Math.hypot(SC.X(p.x)-px,SC.Y(p.z)-py);if(d<b){b=d;drag=i}})}else if(ty==='up'){drag=null;return}
+  if(drag!=null)H[drag]={x:clamp(SC.iX(px),-100,500),z:clamp(SC.iY(py),0,350)}};
+ const lb=btn('📡 載入地震紀錄（1／3）',()=>{count++;lb.textContent=count<3?`📡 載入地震紀錄（${count+1}／3）`:'✅ 已全部載入';if(count>=3){lb.disabled=true;step2()}});
+ controls([lb]);
+ guide('琉球海溝的地震');add('<p>這是一張<b>剖面圖</b>：想像把琉球海溝附近的地球切開，從側面看進去。每個點是一次地震的「震源」，也就是地底下開始破裂的位置。</p><div class="task">📡 分三批載入過去多年的地震紀錄，一邊載入一邊觀察。</div>');
+ function step2(){seq([n=>mcq('這些震源的分布有什麼特色？（可複選）',[{t:'靠近海溝的地震大多很淺',ok:1},{t:'越往島弧的方向，震源越深',ok:1},{t:'許多震源排成一條傾斜的帶子',ok:1},{t:'最深的地震可達約 300 公里',ok:1},{t:'地震在地底平均分布，沒有規律',ok:0}],{multi:true,onDone:()=>n()}),
+  n=>{add('<div class="task">📐 <b>量傾角</b>：畫面上出現了一條虛線。拖曳兩端的圓圈，讓虛線沿著傾斜的震源帶。</div>');H=[{x:0,z:10},{x:300,z:60}];st=span('');
+   const ok=btn('✅ 我量好了',()=>{const[a,b]=H;if(Math.abs(b.x-a.x)<80){toast('把兩個圓圈拉遠一點，量起來比較準');return}
+    const s=S.quakes.filter(q=>q.s&&q.x>=0&&q.x<=350),k=(b.z-a.z)/(b.x-a.x),rms=Math.sqrt(s.reduce((m,q)=>m+(q.z-(a.z+k*(q.x-a.x)))**2,0)/s.length);
+    if(rms>30){toast('虛線離震源帶還有點遠，再調整看看');return}done=true;ok.disabled=true;S.dip=Math.round(dipOf(H));fitted=true;save();n()});
+   controls([lb,st,ok])},
+  n=>{add(`<div class="task good">📐 你量到的隱沒帶傾角約 <b>${S.dip}°</b>。（角度是用真實的公里數計算的，不受螢幕比例影響。）</div>`);n()},
+  n=>mcq('為什麼地震會沿著一條傾斜的帶子發生，而且可以深達 300 公里？',[{t:'一塊冰冷堅硬的老洋殼斜斜插進地函，在下沉過程中不斷摩擦、破裂',ok:1,fb:'✅ 周圍的地函又熱又軟，通常不容易發生地震；只有冰冷堅硬的隱沒板塊會「脆裂」，所以這些震源剛好描出了板塊的形狀。'},{t:'地底有一條很長的裂縫一直在張開',ok:0},{t:'都是火山爆發造成的',ok:0,fb:'🤔 火山引起的地震多半很淺，無法解釋 300 公里深的地震。'}],{onDone:()=>{addClue('trench',`琉球海溝下方的震源沿著傾斜帶分布（我量到的傾角約 ${S.dip}°），深達約 300 公里`);n()}}),
+  n=>mcq('這項證據對 B 和 C 的意義是？',[{t:'C 預測舊海底會在某處沉回地球內部，這裡正是證據；B 無法說明海底為什麼往下插',ok:1},{t:'支持 B：地球正在把海底吸進去，所以變大',ok:0,fb:'🤔 如果地球在膨脹，地表應該到處被「撐開」，而不是有地方被往下「拉進去」。'},{t:'兩者都不受影響',ok:0}],{onDone:()=>{S.hyp.B='淘汰';S.hyp.C='存活';renderNotebook();save();toast('⚖️ 假說 B 被淘汰！');n()}}),
+  n=>{add('<div class="warnbox">⚖️ 判決：<b>B 地球膨脹說</b>淘汰。<b>C 海底擴張說</b>是唯一通過所有檢驗的假說。</div>');
+   hist('日本地震學家和達清夫在 1920～30 年代就發現日本下方有深達數百公里的地震，而且越往大陸方向越深；美國的班尼奧夫（Hugo Benioff）後來也做了深入研究。這種傾斜的地震帶今天稱為「和達－班尼奧夫帶」。');nextBtn('看完整模型 →')}])}}},
+
+/* ---------- 16 完整模型與台灣 ---------- */
+{ch:6,title:'完整模型與台灣',enter(){layout('single');SC.set({pad:{l:0,r:0,t:0,b:0}});view.scene=(ctx,t)=>drawFullModel(ctx,t);
+ const rate=S.rate||12,times=Math.round(8/(rate/10));
+ guide('完整模型與台灣');add('<p>把所有線索串起來，就是一條巨大的「海底輸送帶」。仔細看動畫中條帶的移動方向、地震和火山的位置。</p>');
+ seq([n=>mcq('下列哪一個順序正確描述了海底的一生？',[{t:'在中洋脊誕生 → 往兩側移動，逐漸變老、變冷、變深，沉積物越堆越厚 → 在海溝隱沒回地函',ok:1},{t:'在海溝誕生 → 往中洋脊移動 → 在中洋脊沉回地函',ok:0},{t:'誕生後就永遠停在原地',ok:0}],{onDone:()=>n()}),
+  n=>{add(`<div class="telegram small"><div class="tg-head">🇹🇼 回到台灣</div>${taiwanSVG()}<p>台灣位在<b>歐亞板塊</b>與<b>菲律賓海板塊</b>的交界。菲律賓海板塊以每年約 7～8 公分的速度往西北推擠。</p><p>在台灣東北方的<b>琉球海溝</b>，菲律賓海板塊隱沒到歐亞板塊下方；在台灣南方的<b>馬尼拉海溝</b>，則是南海的洋殼（屬於歐亞板塊）隱沒到菲律賓海板塊下方。台灣本身就是板塊擠壓、碰撞而隆起的山脈。</p><p class="muted">（海溝符號的三角形畫在「上方」那個板塊的一側。）</p></div>`);n()},
+  n=>calc('菲律賓海板塊每年約移動 8 公分。100 萬年可以移動多少公里？',{ans:80,tol:1,unit:'公里',hint:'8 公分 × 1,000,000 ＝ 8,000,000 公分，再換成公里（1 公里 ＝ 100,000 公分）。',good:`80 公里，差不多是台北到新竹的距離！大約是你量到的大西洋單側擴張速率的 ${times} 倍。`,onDone:()=>n()}),
+  n=>mcq('台灣地震這麼多，最主要的原因是？',[{t:'台灣位於板塊交界，板塊不斷擠壓、隱沒',ok:1},{t:'台灣的火山特別多',ok:0,fb:'🤔 台灣的活火山很少，大部分地震和板塊運動有關。'},{t:'颱風太多',ok:0}],{onDone:()=>n()}),
+  n=>openQ('用今天學到的內容，向家人解釋「為什麼台灣地震多」。至少要用到「板塊」和「隱沒」兩個詞。',{label:'給家人的解釋',onDone:()=>n()}),
+  n=>nextBtn('最後一章：撰寫調查報告 →')])}},
+
+/* ---------- 17 調查報告 ---------- */
+{ch:7,title:'調查報告',enter(){layout('html');const R=S.report;
+ const form=()=>{const s=stage(`<h2 class="h2">📝 深海調查報告</h2><p class="muted">依照「主張－證據－推理」（CER）撰寫。內容會自動儲存；寫好後可以產生正式報告，列印或存成 PDF。</p>
+ <div class="cer"><h3>① 主張（Claim）：哪一個假說最能解釋海底的證據？</h3>${['A','B','C'].map(k=>`<label class="rad"><input type="radio" name="cl" value="${k}" ${R.pick===k?'checked':''}> ${HYP[k].name}</label>`).join('')}
+ <textarea class="inp" id="rc" rows="2" placeholder="用一句話寫出你的主張，例如：海底是……">${esc(R.claim)}</textarea>
+ <h3>② 證據（Evidence）：選出至少 3 項支持你主張的線索</h3><div class="chips">${S.clues.map(id=>`<button class="chip${R.ev.includes(id)?' on':''}" data-id="${id}">${CLUES[id].icon} ${esc(clueText(id))}</button>`).join('')||'<span class="muted">（筆記本裡還沒有線索）</span>'}</div>
+ <h3>③ 推理（Reasoning）：這些證據為什麼支持你的主張？其他假說為什麼被淘汰？</h3>
+ <p class="muted">可以用這個句型：「如果……是真的，就應該觀察到……；我們確實觀察到……，所以……」</p>
+ <textarea class="inp" id="rr" rows="7">${esc(R.reason)}</textarea>
+ <h3>④ 限制與未解的問題</h3><p class="muted">你的調查有哪些不確定的地方？還想繼續研究什麼？（例如：是什麼力量推動板塊？）</p>
+ <textarea class="inp" id="rl" rows="3">${esc(R.limit)}</textarea></div>
+ <div class="center"><button class="btn big" id="mk">📄 產生報告</button></div>`);
+  const sync=()=>{const p=s.querySelector('input[name=cl]:checked');R.pick=p?p.value:null;R.claim=s.querySelector('#rc').value;R.reason=s.querySelector('#rr').value;R.limit=s.querySelector('#rl').value;save()};
+  s.querySelectorAll('input,textarea').forEach(x=>{x.addEventListener('input',sync);x.addEventListener('change',sync)});
+  s.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const id=c.dataset.id,i=R.ev.indexOf(id);if(i>=0)R.ev.splice(i,1);else R.ev.push(id);c.classList.toggle('on',i<0);save()});
+  s.querySelector('#mk').onclick=()=>{sync();const miss=[];if(!R.pick)miss.push('選擇主張');if(R.claim.trim().length<6)miss.push('寫出主張句');if(R.ev.length<3)miss.push('至少 3 項證據');if(R.reason.trim().length<40)miss.push('推理至少 40 字');
+   if(miss.length){toast('還缺：'+miss.join('、'));return}report()};
+  guide('撰寫調查報告');add('<div class="task">📝 在左邊完成四個部分，再按「產生報告」。</div>');
+  add('<div class="q"><div class="qt">✅ 自我檢核</div><ul class="check"><li>☐ 主張清楚回答了「哪個假說最好」</li><li>☐ 至少 3 項證據，最好包含你自己量到的數字</li><li>☐ 說明證據「為什麼」支持主張</li><li>☐ 說明 A、B 各是被哪項證據淘汰的</li><li>☐ 誠實寫出限制或還沒解決的問題</li></ul></div>');
+  add('<p class="muted">💡 可以打開右邊筆記本的「✏️ 我的想法」，看看自己一路上的預測和想法。</p>')};
+ const report=()=>{const d=S.drills,err=d.length?Math.round(d.reduce((m,x)=>m+Math.abs(x.p-x.a)/Math.max(x.a,1),0)/d.length*100):null;
+  const s=stage(`<div class="report"><h2>深海調查報告</h2><p style="text-align:center">調查員：<b>${esc(S.name)}</b>　日期：${new Date().toLocaleDateString('zh-TW')}</p>
+  <h3>① 主張</h3><p><b>${HYP[R.pick].name}</b><br>${esc(R.claim)}</p>
+  <h3>② 證據</h3><ol>${R.ev.map(id=>`<li>${CLUES[id].icon} ${esc(clueText(id))}<span class="csrc">（${CLUES[id].src}）</span></li>`).join('')}</ol>
+  <h3>③ 推理</h3><p style="white-space:pre-wrap">${esc(R.reason)}</p>
+  <h3>④ 限制與未解的問題</h3><p style="white-space:pre-wrap">${esc(R.limit)||'（未填寫）'}</p>
+  <h3>附錄 A　我的測量數據</h3><table><tr><th>項目</th><th>結果</th></tr>
+  <tr><td>沉積物測點</td><td>${S.sed.length} 點</td></tr><tr><td>熱流測點</td><td>${S.heat.length} 點</td></tr>
+  <tr><td>磁條帶擬合的半擴張速率</td><td>${S.rate?`${S.rate} 公里／百萬年（每年約 ${(S.rate/10).toFixed(2)} 公分）`:'—'}</td></tr>
+  <tr><td>鑽探</td><td>${d.length} 孔${err!=null?`，年齡預測平均誤差約 ${err}%`:''}</td></tr>
+  <tr><td>琉球隱沒帶傾角</td><td>${S.dip!=null?S.dip+'°':'—'}</td></tr></table>
+  <h3>附錄 B　調查筆記</h3><table>${S.log.map(n=>`<tr><td style="width:32%">${esc(n.label)}</td><td style="white-space:pre-wrap">${esc(n.text)}</td></tr>`).join('')}</table>
+  <h3>教師評量（CER 規準）</h3><table><tr><th>向度</th><th>3 優秀</th><th>2 達成</th><th>1 待加強</th></tr>
+  <tr><td>主張</td><td>明確、可檢驗，並回應問題</td><td>明確但較籠統</td><td>不明確或與問題無關</td></tr>
+  <tr><td>證據</td><td>3 項以上相關證據，並引用數據</td><td>2～3 項相關證據</td><td>證據不足或不相關</td></tr>
+  <tr><td>推理</td><td>說明證據如何支持主張，也說明其他假說為何被淘汰</td><td>有把證據和主張連結起來</td><td>只是重述證據</td></tr>
+  <tr><td>限制</td><td>指出具體的不確定性或延伸問題</td><td>有提到限制</td><td>未提及</td></tr></table>
+  <p>得分：＿＿＿／12　　教師評語：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</p></div>
+  <div class="center noprint"><button class="btn big" id="pr">🖨 列印／存成 PDF</button> <button class="btn alt" id="bk">✏️ 返回修改</button></div>`);
+  s.querySelector('#pr').onclick=()=>window.print();s.querySelector('#bk').onclick=form;
+  guide('任務完成！');add(`<div class="task good">🎉 恭喜 ${esc(S.name)} 完成全部調查！</div>`);
+  add('<p>回顧你走過的路：<b>觀察 → 提出假說 → 做預測 → 檢驗 → 淘汰</b>。你沒有被告知答案，而是用證據一步步排除了錯誤的想法。</p>');
+  hist('1962 年，美國地質學家赫斯（Harry Hess）發表海底擴張的構想，他自己稱之為一篇「地球詩篇」（geopoetry），因為當時證據還不夠。短短幾年內，你今天走過的這些證據接連出現；到 1968 年前後，海底擴張和大陸漂移被整合成「板塊構造學說」。');
+  add('<div class="q"><div class="qt">🤔 延伸挑戰</div>是什麼力量推動板塊？科學家提出過地函對流、隱沒板塊往下的「拉力」、中洋脊的「推力」……到底哪一個最重要，至今仍在研究中。你會設計什麼證據來判斷？</div>')};
+ form()}}
+];
+
+/* ================= 導覽 ================= */
+function renderPills(){const P=$('#pills');P.innerHTML='';const maxCh=STEPS[S.maxStep].ch,cur=STEPS[S.step].ch;
+ CHAPTERS.forEach((n,ci)=>{const b=el('button','pill'+(ci===cur?' cur':ci<=maxCh?' done':''),`${ci}．${n}`);b.disabled=ci>maxCh;b.onclick=()=>go(STEPS.findIndex(s=>s.ch===ci));P.appendChild(b)})}
+function go(i){i=clamp(i|0,0,STEPS.length-1);S.step=i;S.maxStep=Math.max(S.maxStep,i);save();view={};stripeOn=false;stripeCache=null;controls([]);$('#htmlStage').innerHTML='';
+ STEPS[i].enter();renderPills();window.scrollTo({top:0,behavior:'smooth'})}
+$('#resetBtn').onclick=()=>{if(!confirm('確定要清除所有進度、從頭開始嗎？'))return;try{localStorage.removeItem(KEY)}catch(e){}S=fresh();renderNotebook();go(0)};
+S.maxStep=clamp(S.maxStep|0,0,STEPS.length-1);S.step=clamp(S.step|0,0,S.maxStep);
+renderNotebook();go(S.step);requestAnimationFrame(frame);
+</script>
+</body>
+</html>
